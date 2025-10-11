@@ -1,3 +1,4 @@
+'''
 from crewai.tools import BaseTool
 from typing import Type, Dict, Any
 from pydantic import BaseModel, Field
@@ -113,3 +114,4 @@ class GTIDeepAnalysisTool(BaseTool):
         behavior_url = f'https://www.virustotal.com/api/v3/files/{hash_value}/behaviour_summary'
         behavior_data = self._make_request(behavior_url)
         return self._format_behavior_summary(behavior_data)
+'''
