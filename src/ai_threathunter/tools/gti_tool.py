@@ -6,6 +6,18 @@ import base64
 import json
 import os
 from datetime import datetime
+import time
+
+# Import the debug manager - but don't store as instance variable
+try:
+    from ..debug_manager import DebugManager
+except ImportError:
+    # Fallback if debug_manager doesn't exist
+    class DebugManager:
+        def __init__(self):
+            self.debug_enabled = False
+        def log_api_call(self, *args, **kwargs):
+            pass
 
 
 class GTIInput(BaseModel):
@@ -27,9 +39,10 @@ class GTITool(BaseTool):
 
     def __init__(self, api_key: str = None):
         super().__init__()
-        self.api_key = api_key or os.getenv('GTI_API_KEY') # Using GTI_API_KEY
+        self.api_key = api_key or os.getenv('GTI_API_KEY') or os.getenv('VIRUSTOTAL_API_KEY')
+        
         if not self.api_key:
-            raise ValueError("GTI API key not found. Please set GTI_API_KEY environment variable.")
+            raise ValueError("GTI API key not found. Please set GTI_API_KEY or VIRUSTOTAL_API_KEY environment variable.")
 
     def _run(self, ioc: str, ioc_type: str) -> str:
         """Execute focused GTI analysis."""
@@ -51,14 +64,59 @@ class GTITool(BaseTool):
             return f"GTI analysis failed for {ioc}: {str(error)}"
 
     def _make_request(self, url: str) -> Dict[str, Any]:
-        """Make GTI API request."""
+        """Make GTI API request with debug logging."""
+        # Create debug manager locally - not as instance variable
+        debug_manager = DebugManager()
+        
+        start_time = time.time()
+        error = None
+        response_data = {}
+        
         try:
             headers = {'x-apikey': self.api_key, 'x-tool': "multi_agent_threathunting"}
+            
+            # Log the request details
+            request_info = {
+                'url': url,
+                'method': 'GET',
+                'headers': {k: v if k != 'x-apikey' else 'REDACTED' for k, v in headers.items()}
+            }
+            
             response = requests.get(url, headers=headers, timeout=20)
             response.raise_for_status()
-            return response.json()
+            response_data = response.json()
+            
+            # Log successful response
+            if debug_manager.debug_enabled:
+                debug_manager.log_api_call(
+                    api_name='GTI',
+                    endpoint=url.replace('https://www.virustotal.com/api/v3/', ''),
+                    request_data=request_info,
+                    response_data={
+                        'status_code': response.status_code,
+                        'data': response_data
+                    },
+                    error=None,
+                    execution_time=time.time() - start_time
+                )
+            
+            return response_data
+            
         except requests.exceptions.RequestException as e:
+            error = e
             print(f"API request failed: {e}")
+            
+            # Log failed request
+            if debug_manager.debug_enabled:
+                debug_manager.log_api_call(
+                    api_name='GTI',
+                    endpoint=url.replace('https://www.virustotal.com/api/v3/', ''),
+                    request_data=request_info if 'request_info' in locals() else {'url': url},
+                    response_data={'error': str(e)},
+                    error=error,
+                    execution_time=time.time() - start_time
+                )
+            
             return {}
 
     def _format_attribution_details(self, attrs: Dict) -> str:
@@ -144,7 +202,7 @@ class GTITool(BaseTool):
             return ''
 
         response = "\n\n=== CROWDSOURCED YARA RULES ===\n"
-        for result in yara_results[:3]: # Limit to top 3 rules
+        for result in yara_results[:3]:
             response += f"- Rule: {result.get('rule_name', 'N/A')}\n"
             response += f"  Author: {result.get('author', 'N/A')}\n"
             response += f"  Source: {result.get('source', 'N/A')}\n"
@@ -154,9 +212,6 @@ class GTITool(BaseTool):
     def _analyze_hash(self, hash_value: str) -> str:
         """Analyze hash with GTI data."""
         print(f"🔍 Analyzing hash with GTI: {hash_value}")
-        # In a real scenario, you would use self._make_request.
-        # For this example, we'll load the content from the provided JSON file.
-     
         primary = self._make_request(f'https://www.virustotal.com/api/v3/files/{hash_value}')
 
         if not primary or not primary.get('data'):
@@ -166,7 +221,8 @@ class GTITool(BaseTool):
         stats = attrs.get('last_analysis_stats', {})
         pe_info = attrs.get('pe_info', {})
         
-        response = f"""=== GTI ANALYSIS: HASH ===
+        response = f"""
+=== GTI ANALYSIS: HASH ===
 IOC: {hash_value}
 Analysis Date: {datetime.now().isoformat()}
 
@@ -177,19 +233,16 @@ DETECTION SUMMARY:
 - Total Engines: {sum(stats.values()) if stats else 0}
 
 FILE DETAILS:
-- Names: {', '.join(attrs.get('names', ['N/A']))}
+- Names: {', '.join(attrs.get('names', ['N/A'])[:5])}
 - Type: {attrs.get('type_description', 'N/A')}
 - Size: {attrs.get('size', 'N/A')} bytes
-- First Seen: {datetime.fromtimestamp(attrs.get('first_submission_date', 0)).strftime('%Y-%m-%d')}
+- First Seen: {datetime.fromtimestamp(attrs.get('first_submission_date', 0)).strftime('%Y-%m-%d') if attrs.get('first_submission_date') else 'N/A'}
 - Imphash: {pe_info.get('imphash', 'N/A')}
 """
-        # Append new GTI data blocks
         response += self._format_gti_assessment(attrs)
         response += self._format_threat_classification(attrs)
         response += self._format_attribution_details(attrs)
         response += self._format_yara_results(attrs)
-        
-        # Add link to GUI
         response += f"\nSource: https://www.virustotal.com/gui/file/{hash_value}"
         return response
 
@@ -203,18 +256,22 @@ FILE DETAILS:
         attrs = primary['data']['attributes']
         stats = attrs.get('last_analysis_stats', {})
 
-        response = f"""=== GTI ANALYSIS: IP ADDRESS ===
+        response = f"""
+=== GTI ANALYSIS: IP ADDRESS ===
 IOC: {ip}
 Analysis Date: {datetime.now().isoformat()}
 
 DETECTION SUMMARY:
 - Malicious: {stats.get('malicious', 0)}
 - Suspicious: {stats.get('suspicious', 0)}
-- Total Engines: {sum(stats.values()) if stats else 0}\n\nINFRASTRUCTURE DETAILS:\n- AS Owner: {attrs.get('as_owner', 'N/A')}\n- ASN: {attrs.get('asn', 'N/A')}\n- Country: {attrs.get('country', 'N/A')}\n"""
-        # Append new GTI attribution data
-        response += self._format_attribution_details(attrs)
+- Total Engines: {sum(stats.values()) if stats else 0}
 
-        # Add link to GUI
+INFRASTRUCTURE DETAILS:
+- AS Owner: {attrs.get('as_owner', 'N/A')}
+- ASN: {attrs.get('asn', 'N/A')}
+- Country: {attrs.get('country', 'N/A')}
+"""
+        response += self._format_attribution_details(attrs)
         response += f"\nSource: https://www.virustotal.com/gui/ip-address/{ip}"
         return response
 
@@ -228,13 +285,22 @@ DETECTION SUMMARY:
         attrs = primary['data']['attributes']
         stats = attrs.get('last_analysis_stats', {})
 
-        response = f"""=== GTI ANALYSIS: DOMAIN ===\nIOC: {domain}\nAnalysis Date: {datetime.now().isoformat()}\n\nDETECTION SUMMARY:\n- Malicious: {stats.get('malicious', 0)}
-- Suspicious: {stats.get('suspicious', 0)}
-- Total Engines: {sum(stats.values()) if stats else 0}\n\nDOMAIN DETAILS:\n- Registrar: {attrs.get('registrar', 'N/A')}\n- Creation Date: {datetime.fromtimestamp(attrs.get('creation_date', 0)).strftime('%Y-%m-%d')}\n- Categories: {', '.join(attrs.get('categories', {{}}).values())}\n"""
-        # Append new GTI attribution data
-        response += self._format_attribution_details(attrs)
+        response = f"""
+=== GTI ANALYSIS: DOMAIN ===
+IOC: {domain}
+Analysis Date: {datetime.now().isoformat()}
 
-        # Add link to GUI
+DETECTION SUMMARY:
+- Malicious: {stats.get('malicious', 0)}
+- Suspicious: {stats.get('suspicious', 0)}
+- Total Engines: {sum(stats.values()) if stats else 0}
+
+DOMAIN DETAILS:
+- Registrar: {attrs.get('registrar', 'N/A')}
+- Creation Date: {datetime.fromtimestamp(attrs.get('creation_date', 0)).strftime('%Y-%m-%d') if attrs.get('creation_date') else 'N/A'}
+- Categories: {', '.join(list(attrs.get('categories', {}).values())[:3]) if attrs.get('categories') else 'N/A'}
+"""
+        response += self._format_attribution_details(attrs)
         response += f"\nSource: https://www.virustotal.com/gui/domain/{domain}"
         return response
 
@@ -249,12 +315,20 @@ DETECTION SUMMARY:
         attrs = primary['data']['attributes']
         stats = attrs.get('last_analysis_stats', {})
 
-        response = f"""=== GTI ANALYSIS: URL ===\nIOC: {url}\nAnalysis Date: {datetime.now().isoformat()}\n\nDETECTION SUMMARY:\n- Malicious: {stats.get('malicious', 0)}
-- Suspicious: {stats.get('suspicious', 0)}
-- Total Engines: {sum(stats.values()) if stats else 0}\n\nURL DETAILS:\n- Final URL: {attrs.get('url', 'N/A')}\n- Title: {attrs.get('title', 'N/A')}\n"""
-        # Append new GTI attribution data
-        response += self._format_attribution_details(attrs)
+        response = f"""
+=== GTI ANALYSIS: URL ===
+IOC: {url}
+Analysis Date: {datetime.now().isoformat()}
 
-        # Add link to GUI
+DETECTION SUMMARY:
+- Malicious: {stats.get('malicious', 0)}
+- Suspicious: {stats.get('suspicious', 0)}
+- Total Engines: {sum(stats.values()) if stats else 0}
+
+URL DETAILS:
+- Final URL: {attrs.get('url', 'N/A')}
+- Title: {attrs.get('title', 'N/A')}
+"""
+        response += self._format_attribution_details(attrs)
         response += f"\nSource: https://www.virustotal.com/gui/url/{url_id}"
         return response

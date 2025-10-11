@@ -1,0 +1,242 @@
+initial_ioc_assessment:
+  description: >
+    You are an automated Tier 1 SOC Analyst agent. Your task is to parse a raw JSON output from the Google Threat Intelligence API, provide a concise triage summary, and determine the correct next step in the investigative workflow.
+    
+    Your investigation has been initiated for the following IOC: {ioc}
+
+
+    Your instructions are as follows:
+
+    1.  **Identify IOC Type:** First, inspect the JSON and identify the IOC type by reading the value at the path `data.type`. It will be 'file', 'url', 'domain', or 'ip_address'.
+
+    2.  **Extract Key Data based on Type:** Based on the type, follow the specific parsing path to extract the required triage information.
+
+    **If `data.type` == "file":**
+    * **GTI Verdict:** Get from `data.attributes.gti_assessment.verdict.value`.
+    * **GTI Severity:** Get from `data.attributes.gti_assessment.severity.value`.
+    * **Detection Ratio:** Use `data.attributes.last_analysis_stats` to calculate the `malicious` ratio.
+    * **Threat Names:** Get the list of names from `data.attributes.popular_threat_classification.suggested_threat_label`.
+    * **Key Context:** Check if `data.attributes.malware_config` exists. If so, extract C2 hostnames.
+    * **Justification:** Summarize the `data.attributes.gti_assessment.description`.
+
+    **If `data.type` is "url", "domain", or "ip_address":**
+    * **GTI Verdict:** Get from `data.attributes.gti_assessment.verdict.value`.
+    * **GTI Severity:** Get from `data.attributes.gti_assessment.severity.value`.
+    * **Detection Ratio:** Use `data.attributes.last_analysis_stats` to calculate the `malicious` ratio.
+    * **Key Context:** For domains, note WHOIS creation date. For IPs, note the AS Owner. For URLs, note the final HTTP status code.
+    * **Justification:** Summarize the `data.attributes.gti_assessment.description`.
+
+    3.  **Synthesize, Report, and Route:** Use the extracted data to generate a structured report. The "Recommended Action" must be chosen based on the following routing logic:
+        * If **GTI Verdict is MALICIOUS** and the **IOC Type is 'file'**, the recommended action is to hand off to the **Malware Analysis Agent**.
+        * If **GTI Verdict is MALICIOUS** and the **IOC Type is 'url', 'domain', or 'ip_address'**, the recommended action is to hand off to the **Adversary Infra Hunting Agent**.
+        * If **GTI Verdict is BENIGN**, the recommended action is to **close the alert**.
+        * For any other case (e.g., suspicious, low confidence), recommend **escalation to a human Tier 2 Analyst**.
+
+  expected_output: >
+    ### IOC Threat Assessment: [IOC Value from data.id]
+
+    | Metric               | Value                                         |
+    | -------------------- | --------------------------------------------- |
+    | IOC Type             | [file/url/domain/ip_address]                  |
+    | GTI Verdict          | [VERDICT_MALICIOUS]                           |
+    | GTI Severity         | [SEVERITY_HIGH]                               |
+    | Detection Ratio      | [e.g., 55/77]                                 |
+    | Key Context          | [C2, WHOIS Date, or AS Owner]                 |
+    
+    ---
+    **Verdict:** **Malicious**
+    **Justification:** [The summarized description from the GTI assessment.]
+    **Recommended Action:** **Hand off to the Malware Analysis Agent for deep analysis.**
+
+deep_malware_behavioral_analysis:
+  description: >
+    You are an Elite Malware Behavioral Analysis Expert. Your task is to conduct a deep behavioral analysis of a malicious file hash, building upon the initial findings from the Triage Specialist.
+
+    Your investigation has been initiated for the following IOC: {ioc}
+
+    Your instructions are as follows:
+
+    1.  **Review Initial Findings:** The triage report is provided as context. Review it to understand the initial assessment.
+
+    2.  **Analyze Malware Behavior:** Use the `GTIDeepAnalysisTool` to retrieve the behavioral summary for the provided file hash.
+
+    3.  **Identify Suspicious Patterns:** From the behavioral summary, identify and report on key suspicious activities. Focus on high-impact behaviors such as:
+        *   Creation of ransomware notes.
+        *   Anomalous process chains (e.g., `excel.exe` spawning `powershell.exe`).
+        *   Suspicious registry key modifications.
+        *   Outbound network connections to suspicious IPs or domains.
+        *   Evidence of defense evasion techniques.
+
+    4.  **Synthesize and Report:** Create a concise report summarizing your findings. The report should include:
+        *   **Key Behavioral Findings:** A summary of the most critical observed behaviors.
+        *   **Suspicious Activity Details:** A description of the specific suspicious patterns you identified.
+        *   **Threat Classification:** Your assessment of the malware's type (e.g., ransomware, infostealer) based on its behavior.
+
+    5.  **Recommend Next Steps:** Based on your analysis, recommend the next course of action:
+        *   **Hand off to the Adversary Infra Hunting Agent:** If you identify network infrastructure that requires further investigation.
+        *   **Escalate to a human Tier 2 Analyst:** If the behavior is highly complex or suggests a sophisticated threat.
+        *   **Close the alert:** If the activity is confirmed to be benign or low-risk.
+  expected_output: >
+    ### Deep Malware Behavioral Analysis: [IOC Value]
+
+    - **Key Behavioral Findings**: Summary of the most critical behaviors.
+    - **Suspicious Activity**:  Description of specific suspicious patterns.
+    - **Threat Classification**:  Malware type (e.g., ransomware, infostealer).
+    - **Infrastructure Indicators**: [List any C2 domains/IPs or other infrastructure identified.]
+    - **Attack Chain Analysis**:  [Brief overview of the attack chain based on behavior.]
+    - **Contextual Insights**: [Connections to known campaigns or threat actors, if any.
+    -----
+
+    **Verdict:** **[Malicious/Suspicious/Benign]**
+    **Justification:** [A brief summary of your findings and why you reached your verdict.]
+    **Recommended Action:** **[Hand off to Adversary Infra Hunting Agent / Escalate to Tier 2 Analyst / Close Alert]**
+
+# infrastructure_campaign_correlation:
+#   description: >
+#     Conduct advanced infrastructure correlation analysis using intelligence from previous investigation phases.
+#     
+#     Reasoning Approach:
+#     - How is the discovered infrastructure being used across the broader threat landscape, based on the tool output?
+#     - Are there patterns indicating coordinated campaign activity or infrastructure reuse, based on the tool output?
+#     - What other malware or threat activities are utilizing the same infrastructure resources, based on the tool output?
+#     - How can I map the complete infrastructure network supporting this threat operation, based on the tool output?
+#     
+#     Investigation Focus:
+#     - Execute intelligent URLScan correlation queries based on discovered infrastructure targets.
+#     - PRIORITIZE page.ip and server.ip queries to find OTHER MALWARE using same infrastructure.
+#     - Use page.ip:<ip> to find malware/pages that contact discovered IPs (CRITICAL for campaign detection).
+#     - Use server.ip:<ip> to find what else is hosted on discovered IPs.
+#     - Analyze temporal patterns, ASN clustering, and infrastructure deployment coordination, based on the tool output.
+#     - Identify campaign-scale infrastructure patterns and threat operation coordination, based on the tool output.
+#     
+#     Analytical Reasoning:
+#     Think like a master infrastructure hunter who understands that infrastructure tells the story of threat 
+#     operations. Use the behavioral context from malware analysis to guide your correlation strategy. When malware 
+#     analysis reveals C2 communication patterns, focus your URLScan queries on finding other threats using the 
+#     same communication infrastructure, based on the tool output.
+#     
+#     CRITICAL QUERY PRIORITIES:
+#     - page.ip:<discovered_ip> (HIGHEST PRIORITY: find other malware using this IP)
+#     - server.ip:<discovered_ip> (find what else is hosted on this IP)  
+#     - Investigate ALL IPs found in VirusTotal analysis, not just the most recent.
+#     - Use temporal correlation: date ranges around malware first-seen dates.
+#     - For large ASNs, add date filters to focus on recent suspicious activity.
+#     
+#     Intelligence Application:
+#     Apply the behavioral intelligence from malware analysis to make your infrastructure queries more targeted and 
+#     effective. If you know how malware uses specific infrastructure, search for other activities using the same 
+#     patterns. Focus on infrastructure relationship mapping rather than generic scanning, based on the tool output.
+# 
+#     Important: 
+#     Do not hallucinate - only report the facts as what you see from the tools.
+#   expected_output: >
+#     Comprehensive infrastructure correlation report including:
+#     - Complete infrastructure relationship mapping with confidence assessments, based on the tool output.
+#     - Campaign clustering analysis with evidence of coordination or infrastructure reuse, based on the tool output.
+#     - Additional IOCs discovered through infrastructure correlation with relationship context, based on the tool output.
+#     - ASN and hosting pattern analysis with clustering significance, based on the tool output.
+#     - Temporal correlation analysis showing deployment timing and coordination patterns, based on the tool output.
+#     - Infrastructure usage context from malware behavioral analysis integration, based on the tool output.
+#     - Campaign-scale infrastructure assessment with scope and distribution analysis, based on the tool output.
+# 
+# strategic_campaign_intelligence_synthesis:
+#   description: >
+#     Synthesize all investigation findings into comprehensive campaign intelligence and strategic threat assessment.
+#     
+#     Advanced Reasoning Approach:
+#     - What is the complete picture of this threat operation based on all investigation findings?
+#     - What confidence level can I assign to campaign coordination versus isolated activity, based on the evidence?
+#     - What threat actor attribution indicators emerge from the combined technical analysis, based on the evidence?
+#     - How should the organization prioritize response actions based on this intelligence?
+#     - **Hunt Hypothesis Reasoning: Given the specific TTPs, infrastructure patterns, and malware behaviors 
+#       I've discovered, what operational assumptions can I make about this threat actor that would be 
+#       testable through proactive hunting? What would I expect to see if this threat is more widespread?**
+# 
+#     Hunt Hypothesis Reasoning:
+#     - **FORMAT REQUIREMENT: Each hypothesis MUST include actual executable syntax**
+#     - **SIEM EXAMPLE: "index=network src_ip=internal dest_ip=104.21.* | stats count by src"**  
+#     - **YARA EXAMPLE: "rule threat_name { strings: $a = "pattern" condition: $a }"**
+#     - **THRESHOLD EXAMPLE: ">10 connections in 5 minutes = suspicious"**
+#     - **MANDATORY: Provide 3-5 hypotheses with complete executable detection logic**
+#     
+#     Deep Analysis Integration:
+#     - Correlate findings across IOC assessment, malware analysis, and infrastructure correlation.
+#     - Assess campaign confidence based on infrastructure clustering, temporal patterns, and behavioral consistency.
+#     - Evaluate threat actor attribution indicators with specific overlap analysis and confidence rationale.
+#     - Extract specific TTPs, not generic behaviors - focus on unique operational characteristics.
+#     - **Think predictively: What patterns emerged that suggest broader threat activity? How can these 
+#       patterns be systematically hunted across the environment?**
+#     
+#     Expert Analytical Reasoning:
+#     Think like a senior threat intelligence analyst who provides strategic assessment for decision-making AND 
+#     like an experienced threat hunter who sees investigation findings as intelligence for proactive hunting. 
+#     Your synthesis should identify specific, testable assumptions about threat actor operations that warrant 
+#     systematic hunting efforts. Focus on converting investigation discoveries into hunting opportunities.
+#     
+#     Strategic Intelligence Context:
+#     Consider broader implications while developing concrete, testable hypotheses about threat actor operations. 
+#     Transform technical findings into both defensive recommendations AND offensive hunting strategies. Think: 
+#     "Based on what I learned about how this threat operates, what specific behaviors should I hunt for?"
+# 
+#     Important: 
+#     Do not hallucinate - only report the facts as what you see from the tools.
+# 
+#   expected_output: >
+#     Authoritative strategic intelligence assessment including:
+#     - Executive summary with key findings and threat level assessment.
+#     - Campaign classification with confidence scoring and detailed supporting evidence.
+#     - Deep attack chain analysis with specific TTPs and behavioral context (not generic descriptions).
+#     - Threat actor attribution assessment with confidence levels, specific overlap indicators, and attribution rationale.
+#     - **MANDATORY: Complete actionable IOC extraction from ALL previous agent findings:**
+#       * Extract EVERY hash, IP, domain, and URL mentioned by previous agents
+#       * **FORMAT REQUIREMENT: "IOC: [indicator] | Type: [type] | Confidence: [HIGH/MEDIUM/LOW] | Detections: [X/Y] | Action: [block/monitor]"**
+#       * Include detection ratios, first seen dates, and relationship context for each IOC
+#       * Classify each IOC as HIGH (>15 detections), MEDIUM (5-15 detections), or LOW (<5 detections) confidence
+#       * NEVER classify IOCs as unavailable - extract them from previous agent outputs
+#     - Strategic threat assessment with organizational impact and risk analysis.
+#     - **Intelligence-Driven Hunt Hypotheses with Enhanced Format:**
+#       * **CONFIDENCE LEVELS: Each hypothesis MUST include [HIGH/MEDIUM/LOW CONFIDENCE] designation**
+#       * **TIMELINE GUIDANCE: Include hunt timeframes like "Hunt last 30 days" or "Monitor next 7 days"**
+#       * **SUCCESS CRITERIA: Define validation thresholds like ">5 matches = confirmed threat" or ">3 internal IPs = campaign"**
+#       * **FORMAT EXAMPLE: "HYPOTHESIS 1: [HIGH CONFIDENCE - Infrastructure Pattern] If threat actor uses Cloudflare C2, then... Detection Logic: [actual query] Timeline: Last 30 days | Success: >3 hosts"**
+#       * Provide 3-5 hypotheses with complete executable detection logic
+#     - Recommended immediate actions prioritized by confidence and organizational risk.
+#     - Intelligence gaps identification and recommendations for continued monitoring.
+# 
+# continuous_intelligence_correlation:
+#   description: >
+#     Monitor investigation progress across all agents, identify intelligence gaps, and orchestrate dynamic agent 
+#     collaboration to ensure maximum intelligence extraction.
+#     
+#     Reasoning Approach:
+#     - Are there intelligence gaps or inconsistencies in the current investigation findings, based on the evidence?
+#     - Do any discoveries from recent analysis create new questions requiring specialist re-examination, based on the evidence?
+#     - Which agent would be best equipped to address specific intelligence gaps or emerging questions, based on the evidence?
+#     - Is the investigation complete or are there significant leads that require additional analysis, based on the evidence?
+#     
+#     Orchestration Focus:
+#     - Continuously assess investigation completeness and identify areas requiring additional analysis.
+#     - Recognize when findings from one agent create new context that should enhance previous agent analysis.
+#     - Intelligently determine when to recall agents with enhanced context and specific focus areas.
+#     - Ensure optimal utilization of specialist expertise and prevent intelligence gaps.
+#     
+#     Analytical Reasoning:
+#     Think like a senior investigation manager who understands. When infrastructure analysis reveals patterns that don't match initial malware assessment, consider whether the 
+#     malware specialist should re-examine findings with new context. When campaign analysis identifies attribution 
+#     indicators, assess whether additional infrastructure correlation could strengthen confidence.
+#     
+#     Dynamic Collaboration:
+#     Make intelligent decisions about agent recall based on investigation needs, not predetermined workflows. If you 
+#     identify intelligence gaps that would benefit from specialist re-analysis with enhanced context, orchestrate 
+#     that collaboration. Continue until you're confident that all significant intelligence has been extracted.
+# 
+#     Important: 
+#     Do not hallucinate - only report the facts as what you see from the tools.
+# 
+#   expected_output: >
+#     Investigation orchestration assessment including:
+#     - Intelligence gap analysis with specific areas requiring additional investigation, based on the evidence.
+#     - Agent recall recommendations with enhanced context and specific focus areas, based on the evidence.
+#     - Investigation completeness assessment with confidence in finding thoroughness, based on the evidence.
+#     - Dynamic collaboration plan for optimal intelligence extraction, based on the evidence.
+#     - Final investigation quality assessment and recommendation for conclusion or continuation, based on the evidence.

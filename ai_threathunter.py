@@ -17,7 +17,7 @@ except ImportError:
 sys.path.insert(0, str(project_root / "src"))
 
 # Now import and run
-from src.ai_threathunting.main import main
+from src.ai_threathunter.main import main
 
 import os
 
