@@ -74,6 +74,11 @@ This section summarizes the development and refinement steps taken to build the 
     - Based on a key design insight, the MCP tools were refactored from multiple, single-purpose tools into a single, unified `gti_mcp_tool.py`.
     - This unified tool manages one connection and exposes multiple actions (e.g., `lookup_ioc`, `get_behaviour_summary`) for different agents to use, leading to a cleaner, more efficient, and more scalable architecture.
 
+7.  **Implementing Configurable Logging:**
+    - To address challenges in diagnosing MCP tool failures, a configurable logging system was implemented.
+    - The `debug_manager.py` was enhanced with a `log()` method that prints verbose output only when the `DEBUG_API_CALLS` environment variable is set to `true`.
+    - All `print` statements in `gti_mcp_tool.py` were replaced with calls to `debug_manager.log()`, allowing for clean production output while retaining the ability to enable detailed logging for debugging.
+
 ## Challenges Encountered
 
 During the development and debugging process, several challenges were encountered and resolved. This section documents them for future reference.
@@ -86,13 +91,15 @@ During the development and debugging process, several challenges were encountere
     - **Problem:** Even after fixing the import error, the `GTIBehaviourAnalysisTool` would still fail, this time with a `KeyError`. This indicated that the tool was trying to access keys in the API response that were not always present.
     - **Resolution:** The tool was made more robust by using the `.get()` method for dictionary key access. This method provides a default value if a key is not found, thus preventing the tool from crashing. This was applied to the `ip_traffic`, `dns_lookups`, and `registry_keys_set` fields.
 
-3.  **Debugging Process:**
-    - **Challenge:** It was initially unclear why the tool was failing to parse the API response.
-    - **Solution:** To diagnose the issue, debug `print` statements were added to the `_make_request` function in the `gti_behaviour_analysis_tool.py` file. This allowed for the inspection of the request URL, the response status code, and the raw response text, which was crucial in identifying the `KeyError` and confirming that the API was indeed returning data.
+3.  **Pydantic Validation Errors:**
+    - **Problem:** When switching to the MCP tool, the application would fail with a Pydantic validation error, complaining about missing fields (`mcp_command`, `mcp_args`, `loop`, `debug_manager`).
+    - **Resolution:** The fields were added to the `GTIMCPTool` class definition as `Optional` with a default value of `None`, and then initialized in the `__init__` method.
 
+4.  **Asyncio and GeneratorExit Errors:**
+    - **Problem:** After fixing the Pydantic validation error, the application would still fail with a `RuntimeError: async generator ignored GeneratorExit` and `asyncio.exceptions.CancelledError`.
+    - **Resolution:** The `gti_mcp_tool.py` was refactored to manage the `stdio_client` and `ClientSession` contexts within the `_call_mcp_tool` method. This ensures that the connection is established and torn down for each tool call, avoiding the complexities of managing a long-lived connection in the tool's lifecycle.
 
 ## Roadmap
 
 [] Threat Hunter Agent - Correlates and provide hunt hypothesis for continued hunts
-[] Orchestrator Agent - Acts as the correlation from all the output and provides the final verdict 
-
+[] Orchestrator Agent - Acts as the correlation from all the output and provides the final verdict
