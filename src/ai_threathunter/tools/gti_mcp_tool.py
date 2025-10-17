@@ -22,6 +22,8 @@ except ImportError:
             self.debug_enabled = False
         def log_api_call(self, *args, **kwargs):
             pass
+        def log(self, *args, **kwargs):
+            pass
 
 # Apply nest_asyncio to allow nested event loops
 nest_asyncio.apply()
@@ -50,6 +52,7 @@ class GTIMCPTool(BaseTool):
     mcp_command: Optional[str] = None
     mcp_args: Optional[list[str]] = None
     loop: Optional[Any] = None
+    debug_manager: Optional[Any] = None
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -59,16 +62,17 @@ class GTIMCPTool(BaseTool):
             raise ValueError("GTI_MCP_PATH environment variable must be set.")
         self.mcp_args = ['--directory', gti_mcp_path, 'run', 'server.py']
         self.loop = asyncio.get_event_loop()
+        self.debug_manager = DebugManager()
         print(f"🔌 Unified GTI MCP Tool initialized.")
 
     async def _call_mcp_tool(self, tool_name: str, arguments: Dict[str, Any]) -> str:
         """Generic method to call a tool on the MCP server."""
-        debug_manager = DebugManager()
+        self.debug_manager.log(f"[MCP TOOL] Calling tool: {tool_name} with arguments: {arguments}")
         start_time = time.time()
         request_info = {'tool': tool_name, 'arguments': arguments}
         
         try:
-            print(f"🔌 Connecting to GTI MCP server...")
+            self.debug_manager.log(f"🔌 Connecting to GTI MCP server...")
             api_key = os.getenv('GTI_API_KEY') or os.getenv('VIRUSTOTAL_API_KEY')
             if not api_key:
                 raise ValueError("GTI_API_KEY or VIRUSTOTAL_API_KEY must be set.")
@@ -78,19 +82,22 @@ class GTIMCPTool(BaseTool):
                 args=self.mcp_args,
                 env={**os.environ, 'vt_apikey': api_key}
             )
+            self.debug_manager.log(f"[MCP TOOL] Server params: {server_params}")
             
             async with stdio_client(server_params) as (read_stream, write_stream):
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
-                    print(f"✅ Connected to GTI MCP.")
-                    print(f"🔍 Calling MCP tool: {tool_name} with {arguments}")
+                    self.debug_manager.log(f"✅ Connected to GTI MCP.")
+                    self.debug_manager.log(f"🔍 Calling MCP tool: {tool_name} with {arguments}")
                     result = await session.call_tool(tool_name, arguments)
+                    self.debug_manager.log(f"[MCP TOOL] Result: {result}")
                     
                     text_content = [item.text for item in result.content if hasattr(item, 'text')]
                     response_text = '\n'.join(text_content)
+                    self.debug_manager.log(f"[MCP TOOL] Response text: {response_text}")
                     
-                    if debug_manager.debug_enabled:
-                        debug_manager.log_api_call(
+                    if self.debug_manager.debug_enabled:
+                        self.debug_manager.log_api_call(
                             api_name='GTI_MCP', endpoint=tool_name, request_data=request_info,
                             response_data={'content': response_text[:1000], 'full_length': len(response_text)},
                             error=None, execution_time=time.time() - start_time
@@ -98,9 +105,9 @@ class GTIMCPTool(BaseTool):
                     return response_text
         except Exception as e:
             error_msg = f"GTI MCP call failed for tool {tool_name}: {str(e)}"
-            print(f"❌ {error_msg}")
-            if debug_manager.debug_enabled:
-                debug_manager.log_api_call(
+            self.debug_manager.log(f"❌ {error_msg}")
+            if self.debug_manager.debug_enabled:
+                self.debug_manager.log_api_call(
                     api_name='GTI_MCP', endpoint=tool_name, request_data=request_info,
                     response_data={'error': str(e)}, error=e, execution_time=time.time() - start_time
                 )
@@ -139,4 +146,4 @@ class GTIMCPTool(BaseTool):
 
     async def _get_behaviour_summary(self, file_hash: str) -> str:
         """Handles file behavioral analysis."""
-        return await self._call_mcp_tool('get_file_behavior', {'file_hash': file_hash})
+        return await self._call_mcp_tool('get_file_behavior_summary', {'hash': file_hash})

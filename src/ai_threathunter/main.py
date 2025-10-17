@@ -27,6 +27,13 @@ def run_investigation(ioc: str, investigation_type: Optional[str] = None, debug:
         investigation_type: Optional investigation focus (e.g., 'campaign', 'malware', 'infrastructure')
         debug: Enable debug mode to capture all API calls
     """
+    # Load environment variables from .env file
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        print("Warning: python-dotenv not found. Skipping .env file loading.")
+
     # Set debug environment variable if debug flag is set
     if debug:
         os.environ['DEBUG_API_CALLS'] = 'true'

@@ -30,6 +30,11 @@ class DebugManager:
             
             DebugManager._initialized = True
     
+    def log(self, message: str):
+        """Log a message to the console if debug mode is enabled."""
+        if self.debug_enabled:
+            print(message)
+
     def _initialize_debug_session(self):
         """Initialize a new debug session directory"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

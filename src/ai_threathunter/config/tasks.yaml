@@ -27,10 +27,9 @@ initial_ioc_assessment:
     * **Justification:** Summarize the `data.attributes.gti_assessment.description`.
 
     3.  **Synthesize, Report, and Route:** Use the extracted data to generate a structured report. The "Recommended Action" must be chosen based on the following routing logic:
-        * If **GTI Verdict is MALICIOUS** and the **IOC Type is 'file'**, the recommended action is to hand off to the **Malware Analysis Agent**.
-        * If **GTI Verdict is MALICIOUS** and the **IOC Type is 'url', 'domain', or 'ip_address'**, the recommended action is to hand off to the **Adversary Infra Hunting Agent**.
+        * If **GTI Verdict is MALICIOUS or SUSPICIOUS** and the **IOC Type is 'file'**, the recommended action is to hand off to the **Malware Analysis Agent**.
+        * If **GTI Verdict is MALICIOUS or SUSPICIOUS** and the **IOC Type is 'url', 'domain', or 'ip_address'**, the recommended action is to hand off to the **Adversary Infra Hunting Agent**.
         * If **GTI Verdict is BENIGN**, the recommended action is to **close the alert**.
-        * For any other case (e.g., suspicious, low confidence), recommend **escalation to a human Tier 2 Analyst**.
 
   expected_output: >
     ### IOC Threat Assessment: [IOC Value from data.id]
@@ -74,7 +73,6 @@ deep_malware_behavioral_analysis:
 
     5.  **Recommend Next Steps:** Based on your analysis, recommend the next course of action:
         *   **Hand off to the Adversary Infra Hunting Agent:** If you identify network infrastructure that requires further investigation.
-        *   **Escalate to a human Tier 2 Analyst:** If the behavior is highly complex or suggests a sophisticated threat.
         *   **Close the alert:** If the activity is confirmed to be benign or low-risk.
   expected_output: >
     ### Deep Malware Behavioral Analysis: [IOC Value]
@@ -89,7 +87,7 @@ deep_malware_behavioral_analysis:
 
     **Verdict:** **[Malicious/Suspicious/Benign]**
     **Justification:** [A brief summary of your findings and why you reached your verdict.]
-    **Recommended Action:** **[Hand off to Adversary Infra Hunting Agent / Escalate to Tier 2 Analyst / Close Alert]**
+    **Recommended Action:** **[Hand off to Adversary Infra Hunting Agent / Close Alert]**
 
 # infrastructure_campaign_correlation:
 #   description: >
