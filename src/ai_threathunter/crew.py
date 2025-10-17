@@ -13,7 +13,7 @@ from typing import List
 # Import your custom tools
 from .tools.gti_tool import GTITool
 from .tools.gti_deep_analysis_tool import GTIDeepAnalysisTool
-from .tools.urlscan_tool import URLScanTool
+# from .tools.urlscan_tool import URLScanTool
 
 
 @CrewBase
