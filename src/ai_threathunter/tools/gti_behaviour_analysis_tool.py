@@ -15,16 +15,16 @@ except ImportError:
         def log_api_call(self, *args, **kwargs):
             pass
 
-class GTIDeepAnalysisInput(BaseModel):
-    """Input schema for the GTI Deep Analysis Tool."""
+class GTIBehaviourAnalysisInput(BaseModel):
+    """Input schema for the GTI Behaviour Analysis Tool."""
     hash: str = Field(..., description="The file hash (SHA256) to analyze.")
 
-class GTIDeepAnalysisTool(BaseTool):
-    name: str = "GTI Deep Analysis Tool"
+class GTIBehaviourAnalysisTool(BaseTool):
+    name: str = "GTI Behaviour Analysis Tool"
     description: str = (
         "Performs deep malware analysis by retrieving detailed behavioral summaries for a file hash from Google Threat Intelligence."
     )
-    args_schema: Type[BaseModel] = GTIDeepAnalysisInput
+    args_schema: Type[BaseModel] = GTIBehaviourAnalysisInput
     api_key: str = Field(default="", exclude=True)
 
     def __init__(self, api_key: str = None):
@@ -85,27 +85,34 @@ class GTIDeepAnalysisTool(BaseTool):
         response = "\n\n=== BEHAVIORAL SUMMARY ===\n"
         data = behavior_data['data']
 
-        def format_list(title, items):
+        def format_list(title, items, limit=None):
             res = f"\n{title}:\n"
             if items:
-                for item in items[:10]:
+                for i, item in enumerate(items):
+                    if limit and i >= limit:
+                        res += f"- ... and {len(items) - limit} more\n"
+                        break
                     res += f"- {item}\n"
             else:
                 res += "- None\n"
             return res
 
+        # Provide the full list of processes for the agent to analyze
         response += format_list("Processes Created", data.get('processes_created', []))
-        response += format_list("Files Opened", data.get('files_opened', []))
-        response += format_list("Registry Keys Opened", data.get('registry_keys_opened', []))
-        response += format_list("IP Traffic", [f"{ip['destination_ip']}:{ip['destination_port']}" for ip in data.get('ip_traffic', [])])
-        response += format_list("HTTP/HTTPS Requests", data.get('http_conversations', []))
-        response += format_list("DNS Lookups", [f"{lookup['hostname']}" for lookup in data.get('dns_lookups', [])])
-        response += format_list("Files Written", data.get('files_written', []))
-        response += format_list("Registry Keys Set", [f"{reg['key']}: {reg['value']}" for reg in data.get('registry_keys_set', [])])
-        response += format_list("Mutexes Created", data.get('mutexes_created', []))
-        response += format_list("Mutexes Opened", data.get('mutexes_opened', []))
+        
+        # For other items, we can still limit them to keep the summary concise
+        response += format_list("Files Opened", data.get('files_opened', []), limit=10)
+        response += format_list("Registry Keys Opened", data.get('registry_keys_opened', []), limit=10)
+        response += format_list("IP Traffic", [f"{ip.get('destination_ip', 'N/A')}:{ip.get('destination_port', 'N/A')}" for ip in data.get('ip_traffic', [])], limit=10)
+        response += format_list("HTTP/HTTPS Requests", data.get('http_conversations', []), limit=10)
+        response += format_list("DNS Lookups", [f"{lookup.get('hostname', 'N/A')}" for lookup in data.get('dns_lookups', [])], limit=10)
+        response += format_list("Files Written", data.get('files_written', []), limit=10)
+        response += format_list("Registry Keys Set", [f"{reg.get('key', 'N/A')}: {reg.get('value', 'N/A')}" for reg in data.get('registry_keys_set', [])], limit=10)
+        response += format_list("Mutexes Created", data.get('mutexes_created', []), limit=10)
+        response += format_list("Mutexes Opened", data.get('mutexes_opened', []), limit=10)
         
         return response
+
 
     def _get_hash_behavior_summary(self, hash_value: str) -> str:
         """Get and format the behavior summary for a hash."""
