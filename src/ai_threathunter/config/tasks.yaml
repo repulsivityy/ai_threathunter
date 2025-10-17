@@ -84,7 +84,7 @@ deep_malware_behavioral_analysis:
     - **Threat Classification**:  Malware type (e.g., ransomware, infostealer).
     - **Infrastructure Indicators**: [List any C2 domains/IPs or other infrastructure identified.]
     - **Attack Chain Analysis**:  [Brief overview of the attack chain based on behavior.]
-    - **Contextual Insights**: [Connections to known campaigns or threat actors, if any.
+    - **Contextual Insights**: [Connections to known campaigns or threat actors, if any.]
     -----
 
     **Verdict:** **[Malicious/Suspicious/Benign]**

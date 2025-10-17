@@ -21,46 +21,27 @@ class ThreatHuntingCrew():
     def __init__(self):
         super().__init__()
         
-        # Check if MCP mode is enabled
+        # Triage agent always uses the direct API
+        from .tools.gti_tool import GTITool
+        self.gti_tool = GTITool()
+
+        # Check if MCP mode is enabled for the malware agent
         use_mcp = os.getenv('USE_GTI_MCP', 'false').lower() == 'true'
         
         if use_mcp:
-            print("🔌 Using GTI MCP Server")
+            print("🔌 Malware agent using GTI MCP Server")
             try:
-                # Import MCP tools
                 from .tools.gti_mcp_tool import GTIMCPTool
-                from .tools.gti_deep_mcp_tool import GTIDeepAnalysisMCPTool
-                
-                # Initialize MCP tools
-                self.gti_tool = GTIMCPTool()
-                self.gti_deep_analysis_tool = GTIDeepAnalysisMCPTool()
-                
-            except ImportError as e:
-                print(f"❌ Failed to import MCP tools: {e}")
-                print("📡 Falling back to Direct GTI API")
-                # Fall back to direct API
-                from .tools.gti_tool import GTITool
-                from .tools.gti_deep_analysis_tool import GTIDeepAnalysisTool
-                self.gti_tool = GTITool()
-                self.gti_deep_analysis_tool = GTIDeepAnalysisTool()
-                
-            except ValueError as e:
-                print(f"❌ MCP configuration error: {e}")
-                print("📡 Falling back to Direct GTI API")
-                # Fall back to direct API
-                from .tools.gti_tool import GTITool
-                from .tools.gti_deep_analysis_tool import GTIDeepAnalysisTool
-                self.gti_tool = GTITool()
-                self.gti_deep_analysis_tool = GTIDeepAnalysisTool()
+                self.gti_deep_analysis_tool = GTIMCPTool()
+            except (ImportError, ValueError) as e:
+                print(f"❌ Failed to import or configure MCP tools: {e}")
+                print("📡 Falling back to Direct GTI API for malware analysis")
+                from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
+                self.gti_deep_analysis_tool = GTIBehaviourAnalysisTool()
         else:
-            print("📡 Using Direct GTI API")
-            # Import direct API tools
-            from .tools.gti_tool import GTITool
-            from .tools.gti_deep_analysis_tool import GTIDeepAnalysisTool
-            
-            # Initialize direct API tools
-            self.gti_tool = GTITool()
-            self.gti_deep_analysis_tool = GTIDeepAnalysisTool()
+            print("📡 Malware agent using Direct GTI API")
+            from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
+            self.gti_deep_analysis_tool = GTIBehaviourAnalysisTool()
 
     @agent
     def triage_specialist(self) -> Agent:

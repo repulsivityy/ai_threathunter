@@ -103,11 +103,11 @@ class GTIBehaviourAnalysisTool(BaseTool):
         # For other items, we can still limit them to keep the summary concise
         response += format_list("Files Opened", data.get('files_opened', []), limit=10)
         response += format_list("Registry Keys Opened", data.get('registry_keys_opened', []), limit=10)
-        response += format_list("IP Traffic", [f"{ip['destination_ip']}:{ip['destination_port']}" for ip in data.get('ip_traffic', [])], limit=10)
+        response += format_list("IP Traffic", [f"{ip.get('destination_ip', 'N/A')}:{ip.get('destination_port', 'N/A')}" for ip in data.get('ip_traffic', [])], limit=10)
         response += format_list("HTTP/HTTPS Requests", data.get('http_conversations', []), limit=10)
-        response += format_list("DNS Lookups", [f"{lookup['hostname']}" for lookup in data.get('dns_lookups', [])], limit=10)
+        response += format_list("DNS Lookups", [f"{lookup.get('hostname', 'N/A')}" for lookup in data.get('dns_lookups', [])], limit=10)
         response += format_list("Files Written", data.get('files_written', []), limit=10)
-        response += format_list("Registry Keys Set", [f"{reg['key']}: {reg['value']}" for reg in data.get('registry_keys_set', [])], limit=10)
+        response += format_list("Registry Keys Set", [f"{reg.get('key', 'N/A')}: {reg.get('value', 'N/A')}" for reg in data.get('registry_keys_set', [])], limit=10)
         response += format_list("Mutexes Created", data.get('mutexes_created', []), limit=10)
         response += format_list("Mutexes Opened", data.get('mutexes_opened', []), limit=10)
         

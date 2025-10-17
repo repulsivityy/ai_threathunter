@@ -74,6 +74,22 @@ This section summarizes the development and refinement steps taken to build the 
     - Based on a key design insight, the MCP tools were refactored from multiple, single-purpose tools into a single, unified `gti_mcp_tool.py`.
     - This unified tool manages one connection and exposes multiple actions (e.g., `lookup_ioc`, `get_behaviour_summary`) for different agents to use, leading to a cleaner, more efficient, and more scalable architecture.
 
+## Challenges Encountered
+
+During the development and debugging process, several challenges were encountered and resolved. This section documents them for future reference.
+
+1.  **`ImportError` due to missing tool:**
+    - **Problem:** The application would crash with an `ImportError`, indicating that the `gti_deep_analysis_tool` module could not be found.
+    - **Resolution:** Upon investigation, it was discovered that the tool had been renamed to `gti_behaviour_analysis_tool`. The import statements in `src/ai_threathunter/crew.py` were updated to reflect the correct file name.
+
+2.  **`KeyError` during API response parsing:**
+    - **Problem:** Even after fixing the import error, the `GTIBehaviourAnalysisTool` would still fail, this time with a `KeyError`. This indicated that the tool was trying to access keys in the API response that were not always present.
+    - **Resolution:** The tool was made more robust by using the `.get()` method for dictionary key access. This method provides a default value if a key is not found, thus preventing the tool from crashing. This was applied to the `ip_traffic`, `dns_lookups`, and `registry_keys_set` fields.
+
+3.  **Debugging Process:**
+    - **Challenge:** It was initially unclear why the tool was failing to parse the API response.
+    - **Solution:** To diagnose the issue, debug `print` statements were added to the `_make_request` function in the `gti_behaviour_analysis_tool.py` file. This allowed for the inspection of the request URL, the response status code, and the raw response text, which was crucial in identifying the `KeyError` and confirming that the API was indeed returning data.
+
 
 ## Roadmap
 
