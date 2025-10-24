@@ -30,7 +30,7 @@ The agents use tools to interact with threat intelligence sources like Google Th
 graph TD
     A[🔍 IOC Input] --> B{Triage Specialist};
     B -- File IOC --> C[Malware Analysis Agent];
-    B -- Network IOC --> D[Adversary Infrastructure Agent];
+    B -- Network IOC --> D[Infrastructure Analysis Agent];
     C -- Network IOCs found --> D;
     D -- Needs deeper file analysis --> C;
 ```
@@ -102,7 +102,7 @@ ai_threathunter/
 ## Roadmap
 
 ### Agents
-- [] Infra Hunter Agent - Investigates network indicators
+- [] Infra Analysis Agent - Investigates network indicators
 - [] Threat Hunter Agent - Correlates and provide hunt hypothesis for continued hunts
 - [] Orchestrator Agent - Acts as the correlation from all the output and provides the final verdict
 

@@ -32,16 +32,16 @@ class ThreatHuntingCrew():
             print("🔌 Malware agent using GTI MCP Server")
             try:
                 from .tools.gti_mcp_tool import GTIMCPTool
-                self.gti_deep_analysis_tool = GTIMCPTool()
+                self.gti_behaviour_analysis_tool = GTIMCPTool()
             except (ImportError, ValueError) as e:
                 print(f"❌ Failed to import or configure MCP tools: {e}")
                 print("📡 Falling back to Direct GTI API for malware analysis")
                 from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
-                self.gti_deep_analysis_tool = GTIBehaviourAnalysisTool()
+                self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool()
         else:
             print("📡 Malware agent using Direct GTI API")
             from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
-            self.gti_deep_analysis_tool = GTIBehaviourAnalysisTool()
+            self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool()
 
     @agent
     def triage_specialist(self) -> Agent:
@@ -56,16 +56,16 @@ class ThreatHuntingCrew():
         """Elite Malware Behavioral Analysis Expert"""
         return Agent(
             config=self.agents_config['malware_analysis_specialist'],
-            tools=[self.gti_deep_analysis_tool]
+            tools=[self.gti_behaviour_analysis_tool]
         )
 
-    # @agent
-    # def infrastructure_hunter(self) -> Agent:
-    #     """Master Infrastructure Hunter and Campaign Correlation Expert"""
-    #     return Agent(
-    #         config=self.agents_config['infrastructure_correlation_specialist'],
-    #         tools=[self.urlscan_tool]
-    #     )
+    @agent
+    def infrastructure_hunter(self) -> Agent:
+        """Master Infrastructure Hunter and Campaign Correlation Expert"""
+        return Agent(
+            config=self.agents_config['infrastructure_analysis_specialist'],
+            tools=[self.gti_behaviour_analysis_tool]
+        )
 
     # @agent
     # def campaign_analyst(self) -> Agent:
@@ -100,15 +100,15 @@ class ThreatHuntingCrew():
             output_file='reports/malware_analysis.md'
         )
 
-    # @task 
-    # def infrastructure_correlation(self) -> Task:
-    #     """Infrastructure campaign correlation and mapping"""
-    #     return Task(
-    #         config=self.tasks_config['infrastructure_campaign_correlation'],
-    #         agent=self.infrastructure_hunter(),
-    #         context=[self.initial_assessment(), self.malware_analysis()],  # Full context
-    #         output_file='reports/infrastructure_analysis.md'
-    #     )
+    @task 
+    def infrastructure_correlation(self) -> Task:
+        """Infrastructure campaign correlation and mapping"""
+        return Task(
+            config=self.tasks_config['infrastructure_campaign_correlation'],
+            agent=self.infrastructure_hunter(),
+            context=[self.initial_assessment(), self.malware_analysis()],  # Full context
+            output_file='reports/infrastructure_analysis.md'
+        )
 
     
     # @task
@@ -136,11 +136,11 @@ class ThreatHuntingCrew():
     def crew(self) -> Crew:
         """Creates the Smart Threat Hunting crew"""
         return Crew(
-            agents=[self.triage_specialist(), self.malware_specialist()],  # Automatically populated by @agent decorators
+            agents=[self.triage_specialist(), self.malware_specialist(), self.infrastructure_hunter()],  # Automatically populated by @agent decorators
             tasks=[
                 self.initial_assessment(),
                 self.malware_analysis(),
-            #    self.infrastructure_correlation(),
+                self.infrastructure_correlation(),
             #    self.campaign_synthesis(),
             #    self.intelligence_orchestration()
             ],    # Automatically populated by @task decorators

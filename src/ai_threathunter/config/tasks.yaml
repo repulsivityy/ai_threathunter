@@ -28,7 +28,7 @@ initial_ioc_assessment:
 
     3.  **Synthesize, Report, and Route:** Use the extracted data to generate a structured report. The "Recommended Action" must be chosen based on the following routing logic:
         * If **GTI Verdict is MALICIOUS or SUSPICIOUS** and the **IOC Type is 'file'**, the recommended action is to hand off to the **Malware Analysis Agent**.
-        * If **GTI Verdict is MALICIOUS or SUSPICIOUS** and the **IOC Type is 'url', 'domain', or 'ip_address'**, the recommended action is to hand off to the **Adversary Infra Hunting Agent**.
+        * If **GTI Verdict is MALICIOUS or SUSPICIOUS** and the **IOC Type is 'url', 'domain', or 'ip_address'**, the recommended action is to hand off to the **Infrastructure Analysis Agent**.
         * If **GTI Verdict is BENIGN**, the recommended action is to **close the alert**.
 
   expected_output: >
@@ -72,7 +72,7 @@ deep_malware_behavioral_analysis:
         *   **Threat Classification:** Your assessment of the malware's type (e.g., ransomware, infostealer) based on its behavior.
 
     5.  **Recommend Next Steps:** Based on your analysis, recommend the next course of action:
-        *   **Hand off to the Adversary Infra Hunting Agent:** If you identify network infrastructure that requires further investigation.
+        *   **Hand off to the Infrastructure Analysis Agent:** If you identify network infrastructure that requires further investigation.
         *   **Close the alert:** If the activity is confirmed to be benign or low-risk.
   expected_output: >
     ### Deep Malware Behavioral Analysis: [IOC Value]
@@ -87,55 +87,63 @@ deep_malware_behavioral_analysis:
 
     **Verdict:** **[Malicious/Suspicious/Benign]**
     **Justification:** [A brief summary of your findings and why you reached your verdict.]
-    **Recommended Action:** **[Hand off to Adversary Infra Hunting Agent / Close Alert]**
+    **Recommended Action:** **[Hand off to Infrastructure Analysis Agent / Close Alert]**
 
-# infrastructure_campaign_correlation:
-#   description: >
-#     Conduct advanced infrastructure correlation analysis using intelligence from previous investigation phases.
-#     
-#     Reasoning Approach:
-#     - How is the discovered infrastructure being used across the broader threat landscape, based on the tool output?
-#     - Are there patterns indicating coordinated campaign activity or infrastructure reuse, based on the tool output?
-#     - What other malware or threat activities are utilizing the same infrastructure resources, based on the tool output?
-#     - How can I map the complete infrastructure network supporting this threat operation, based on the tool output?
-#     
-#     Investigation Focus:
-#     - Execute intelligent URLScan correlation queries based on discovered infrastructure targets.
-#     - PRIORITIZE page.ip and server.ip queries to find OTHER MALWARE using same infrastructure.
-#     - Use page.ip:<ip> to find malware/pages that contact discovered IPs (CRITICAL for campaign detection).
-#     - Use server.ip:<ip> to find what else is hosted on discovered IPs.
-#     - Analyze temporal patterns, ASN clustering, and infrastructure deployment coordination, based on the tool output.
-#     - Identify campaign-scale infrastructure patterns and threat operation coordination, based on the tool output.
-#     
-#     Analytical Reasoning:
-#     Think like a master infrastructure hunter who understands that infrastructure tells the story of threat 
-#     operations. Use the behavioral context from malware analysis to guide your correlation strategy. When malware 
-#     analysis reveals C2 communication patterns, focus your URLScan queries on finding other threats using the 
-#     same communication infrastructure, based on the tool output.
-#     
-#     CRITICAL QUERY PRIORITIES:
-#     - page.ip:<discovered_ip> (HIGHEST PRIORITY: find other malware using this IP)
-#     - server.ip:<discovered_ip> (find what else is hosted on this IP)  
-#     - Investigate ALL IPs found in VirusTotal analysis, not just the most recent.
-#     - Use temporal correlation: date ranges around malware first-seen dates.
-#     - For large ASNs, add date filters to focus on recent suspicious activity.
-#     
-#     Intelligence Application:
-#     Apply the behavioral intelligence from malware analysis to make your infrastructure queries more targeted and 
-#     effective. If you know how malware uses specific infrastructure, search for other activities using the same 
-#     patterns. Focus on infrastructure relationship mapping rather than generic scanning, based on the tool output.
-# 
-#     Important: 
-#     Do not hallucinate - only report the facts as what you see from the tools.
-#   expected_output: >
-#     Comprehensive infrastructure correlation report including:
-#     - Complete infrastructure relationship mapping with confidence assessments, based on the tool output.
-#     - Campaign clustering analysis with evidence of coordination or infrastructure reuse, based on the tool output.
-#     - Additional IOCs discovered through infrastructure correlation with relationship context, based on the tool output.
-#     - ASN and hosting pattern analysis with clustering significance, based on the tool output.
-#     - Temporal correlation analysis showing deployment timing and coordination patterns, based on the tool output.
-#     - Infrastructure usage context from malware behavioral analysis integration, based on the tool output.
-#     - Campaign-scale infrastructure assessment with scope and distribution analysis, based on the tool output.
+infrastructure_campaign_correlation:
+  description: >
+    You are a Master Infrastructure Hunter and Campaign Correlation Expert. Your mission is to analyze network IOCs (IPs, domains, URLs), map out the adversary's infrastructure, and identify connections to broader campaigns using the specific actions available in your tools.
+
+    Your investigation has been initiated for the following IOC: {ioc}
+
+    Your instructions outline a strategic, iterative investigation process:
+
+    1.  **Get Baseline Intelligence:**
+        *   Start by determining the IOC type (domain, IP, or URL).
+        *   Use the most specific tool action to get a full report on the initial IOC. For example, if the IOC is a domain, use the `get_domain_report` action. This provides the initial context for your investigation.
+
+    2.  **Expand and Pivot:**
+        *   Your primary goal is to discover related infrastructure. Use the "get entities related to..." actions to expand your search.
+        *   If your IOC is a domain, use `get_entities_related_to_a_domain` to find all linked IPs and URLs.
+        *   If your IOC is an IP address, use `get_entities_related_to_an_ip_address` to find all domains hosted on it.
+        *   This is the most critical step for identifying campaign infrastructure.
+
+    3.  **Iterative Deep Dive:**
+        *   For each significant new IOC you discovered in the previous step, repeat Step 1. For example, if you found a new suspicious IP related to your initial domain, use the `get_ip_address_report` action on that IP.
+        *   Continue this process, alternating between getting full reports on new IOCs and finding their relationships.
+
+    4.  **Synthesize and Report:**
+        *   After you have explored the key relationships, synthesize your findings into a report.
+        *   Map out the infrastructure, showing how the different IOCs are connected.
+        *   State your confidence level (High, Medium, Low) on whether this is a coordinated campaign, and provide the evidence (e.g., "Domain X and Domain Y are part of a campaign because they are both hosted on the malicious IP address Z.").
+        *   List all newly discovered IOCs.
+
+    **Analytical Mindset:**
+    Think like an investigator mapping a criminal network. Start with one lead, get the full story on it, find its connections, and then investigate those new leads. Use the specific actions (`get_domain_report`, `get_entities_related_to_an_ip_address`, etc.) as your primary investigative tools. Do not use the generic `lookup_ioc` action. Base all findings strictly on the output from your tools.
+  expected_output: >
+    ### Infrastructure and Campaign Analysis Report
+
+    **Initial IOC Assessment:**
+    - **IOC:** [Initial IOC Value]
+    - **GTI Summary:** [Brief summary of the initial GTI lookup findings, including verdict and key context.]
+
+    **Infrastructure Relationship Mapping:**
+    - [A description of how the discovered infrastructure is connected. Use a list or diagram-like description.]
+    - **Example:** 
+      - IP `1.2.3.4` (AS Owner: Evil Hosting) hosts:
+        - Domain `malicious-c2.com` (GTI Verdict: Malicious)
+        - Domain `phishing-site.net` (GTI Verdict: Malicious)
+
+    **Campaign Correlation Assessment:**
+    - **Confidence:** [High/Medium/Low]
+    - **Evidence:** [Explain the evidence for campaign activity, such as infrastructure reuse, temporal correlation, or shared TTPs.]
+
+    **Newly Discovered IOCs:**
+    - **IPs:** [List of new IPs]
+    - **Domains:** [List of new domains]
+    - **URLs:** [List of new URLs]
+
+    **Recommended Next Steps:**
+    - **[Hand off to the Strategic Campaign Intelligence Analyst for final synthesis / Close the alert if findings are benign or inconclusive.]**
 # 
 # strategic_campaign_intelligence_synthesis:
 #   description: >

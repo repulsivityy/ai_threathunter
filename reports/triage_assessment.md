@@ -5,8 +5,7 @@
 | GTI Verdict          | VERDICT_MALICIOUS                             |
 | GTI Severity         | SEVERITY_LOW                                  |
 | Detection Ratio      | 22/77                                         |
-| Key Context          | Trojan: ninjasor                              |
-
+| Key Context          | Popular Threat Name: trojan.ninjasor          |
 ---
 **Verdict:** **Malicious**
 **Justification:** This indicator is malicious (low severity). It was detected by Google's spam and threat filtering engines, it is considered widespread and Mandiant's scoring pipeline identified this indicator as malicious.
