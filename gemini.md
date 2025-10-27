@@ -18,8 +18,8 @@ Key features include:
 ## 🤖 **AI Crew for Threat Hunting**
 
 - **🔍 Triage Specialist** - Rapid IOC assessment and priority identification
-- **🦠 Malware Analysis** - Deep behavioral analysis and attack chain reconstruction  
-- **🕸️ Infrastructure Specialist** - Campaign correlation and infrastructure mapping
+- **🦠 Malware Analysis Specialist** - Deep behavioral analysis and attack chain reconstruction  
+- **🕸️ Infrastructure Analysis Specialist** - Campaign correlation and infrastructure mapping
 
 ## Expected Workflow
 
@@ -29,7 +29,7 @@ Key features include:
 graph TD
     A[🔍 IOC Input] --> B{Triage Specialist};
     B -- File IOC --> C[Malware Analysis Agent];
-    B -- Network IOC --> D[Adversary Infrastructure Agent];
+    B -- Network IOC --> D[Infrastructure Analysis Agent];
     C -- Network IOCs found --> D;
     D -- Needs deeper file analysis --> C;
 ```
@@ -78,6 +78,13 @@ This section summarizes the development and refinement steps taken to build the 
     - To address challenges in diagnosing MCP tool failures, a configurable logging system was implemented.
     - The `debug_manager.py` was enhanced with a `log()` method that prints verbose output only when the `DEBUG_API_CALLS` environment variable is set to `true`.
     - All `print` statements in `gti_mcp_tool.py` were replaced with calls to `debug_manager.log()`, allowing for clean production output while retaining the ability to enable detailed logging for debugging.
+
+8.  **Activating and Enhancing the Infrastructure Analysis Agent:**
+    - The `infrastructure_hunter` agent and its corresponding `infrastructure_correlation` task were activated in `crew.py`.
+    - The `Unified GTI MCP Tool` (`gti_mcp_tool.py`) was significantly enhanced to include specific actions for infrastructure investigation (`get_domain_report`, `get_entities_related_to_a_domain`, `get_ip_address_report`, etc.), moving beyond the generic `lookup_ioc`. This is the next step. 
+    - The `infrastructure_campaign_correlation` task in `tasks.yaml` was rewritten to provide the agent with a sophisticated, multi-step investigative strategy that leverages these new, specific tool actions.
+    - A naming convention was standardized by refactoring the `gti_deep_analysis_tool` variable to `gti_behaviour_analysis_tool` in `crew.py`.
+    - A logical bug was fixed in the `deep_malware_behavioral_analysis` task prompt, which was referring to an outdated tool name. The prompt was updated to provide specific instructions for both direct API and MCP tool modes.
 
 ## Challenges Encountered
 
