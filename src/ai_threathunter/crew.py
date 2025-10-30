@@ -25,6 +25,12 @@ class ThreatHuntingCrew():
         from .tools.gti_tool import GTITool
         self.gti_tool = GTITool()
 
+        from .tools.gti_ip_address_tool import GTIIpAddressTool
+        self.gti_ip_address_tool = GTIIpAddressTool()
+
+        from .tools.gti_domain_tool import GTIDomainTool
+        self.gti_domain_tool = GTIDomainTool()
+
         # Check if MCP mode is enabled for the malware agent
         use_mcp = os.getenv('USE_GTI_MCP', 'false').lower() == 'true'
         
@@ -64,7 +70,7 @@ class ThreatHuntingCrew():
         """Master Infrastructure Hunter and Campaign Correlation Expert"""
         return Agent(
             config=self.agents_config['infrastructure_analysis_specialist'],
-            tools=[self.gti_behaviour_analysis_tool]
+            tools=[self.gti_ip_address_tool, self.gti_domain_tool]
         )
 
     # @agent

@@ -1,12 +1,12 @@
-### IOC Threat Assessment: 5329d4b1d8aa6b3e90176927c2597f28c7173f9293304504f9c3a426c821c93d
+### IOC Threat Assessment: d3db723717d3f9b945fd02538d1e2dbd4f8615a3385770a15f38d2b91037ef6d
 | Metric               | Value                                         |
 | -------------------- | --------------------------------------------- |
 | IOC Type             | file                                          |
 | GTI Verdict          | VERDICT_MALICIOUS                             |
 | GTI Severity         | SEVERITY_LOW                                  |
-| Detection Ratio      | 22/77                                         |
-| Key Context          | Popular Threat Name: trojan.ninjasor          |
+| Detection Ratio      | 49/77                                         |
+| Key Context          | Suggested Threat: trojan.androm/ahls          |
 ---
 **Verdict:** **Malicious**
-**Justification:** This indicator is malicious (low severity). It was detected by Google's spam and threat filtering engines, it is considered widespread and Mandiant's scoring pipeline identified this indicator as malicious.
+**Justification:** This indicator is malicious (low severity). It was detected by Google's spam and threat filtering engines.
 **Recommended Action:** **Hand off to the Malware Analysis Agent for deep analysis.**

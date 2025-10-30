@@ -49,6 +49,7 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
+test_*
 
 # Temporary files
 *.tmp

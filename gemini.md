@@ -47,6 +47,7 @@ The system can run in two modes: Direct API mode or MCP Server mode.
   - MCP Mode: `gti_mcp_tool.py` (action: `get_behaviour_summary`)
 
 - **Adversary Infrastructure Agent**
+  - Direct API Mode: `gti_ip_address_tool.py`, `gti_domain_tool.py`
   - Shodan MCP Server: `shodan_mcp_tool.py` (Future)
   - AI Visual Detector: From `ai_phishing_detector` (Future)
   - *Note: This agent would also use the unified `gti_mcp_tool.py` for any GTI lookups.*
@@ -85,6 +86,10 @@ This section summarizes the development and refinement steps taken to build the 
     - The `infrastructure_campaign_correlation` task in `tasks.yaml` was rewritten to provide the agent with a sophisticated, multi-step investigative strategy that leverages these new, specific tool actions.
     - A naming convention was standardized by refactoring the `gti_deep_analysis_tool` variable to `gti_behaviour_analysis_tool` in `crew.py`.
     - A logical bug was fixed in the `deep_malware_behavioral_analysis` task prompt, which was referring to an outdated tool name. The prompt was updated to provide specific instructions for both direct API and MCP tool modes.
+
+9.  **Dedicated Infrastructure Analysis Tool (Direct API):**
+    - A new tool, `gti_ip_address_tool.py`, was created to provide dedicated infrastructure analysis capabilities for IP addresses via the direct GTI API.
+    - The `infrastructure_hunter` agent in `crew.py` was equipped with this new tool to enable it to perform its analysis directly against the API.
 
 ## Challenges Encountered
 

@@ -11,13 +11,14 @@ The application takes an IOC (like a file hash, URL, or IP address) and kicks of
 The primary agents are:
 - **Triage Specialist**: Performs the initial analysis of the IOC to determine its nature and threat level.
 - **Malware Analysis Specialist**: Conducts a deep-dive behavioral analysis of file-based IOCs to understand their capabilities.
+- **Infrastructure Analysis Specialist**: Maps out adversary infrastructure and finds connections between different network IOCs such as IP addresses and domains.
 
 The agents use tools to interact with threat intelligence sources like Google Threat Intelligence (GTI) to enrich their analysis. The workflow is defined in configuration files, allowing for easy customization.
 
 ## Features
 
 - **Automated IOC Analysis**: Streamlines the investigation of file hashes, URLs, domains, and IP addresses.
-- **AI Agent Crew**: Utilizes a team of specialized AI agents for a comprehensive investigation.
+- **AI Agent Crew**: Utilizes a team of specialized AI agents for a comprehensive investigation, covering triage, malware analysis, and infrastructure mapping.
 - **Threat Intelligence Integration**: Connects to external threat intelligence APIs to gather evidence.
 - **Configurable Workflow**: Agent roles and tasks are defined in YAML files for easy customization.
 - **Selectable Backends**: Can be configured to use direct API calls or a more advanced MCP (Mission Control Platform) server.
@@ -102,7 +103,7 @@ ai_threathunter/
 ## Roadmap
 
 ### Agents
-- [] Infra Analysis Agent - Investigates network indicators
+- [x] Infra Analysis Agent - Investigates network indicators
 - [] Threat Hunter Agent - Correlates and provide hunt hypothesis for continued hunts
 - [] Orchestrator Agent - Acts as the correlation from all the output and provides the final verdict
 
