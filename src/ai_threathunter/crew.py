@@ -25,29 +25,31 @@ class ThreatHuntingCrew():
         from .tools.gti_tool import GTITool
         self.gti_tool = GTITool()
 
-        from .tools.gti_ip_address_tool import GTIIpAddressTool
-        self.gti_ip_address_tool = GTIIpAddressTool()
-
-        from .tools.gti_domain_tool import GTIDomainTool
-        self.gti_domain_tool = GTIDomainTool()
-
-        # Check if MCP mode is enabled for the malware agent
+        # Check if MCP mode is enabled
         use_mcp = os.getenv('USE_GTI_MCP', 'false').lower() == 'true'
         
         if use_mcp:
-            print("🔌 Malware agent using GTI MCP Server")
+            print("🔌 Malware and Infrastructure agents using GTI MCP Server")
             try:
                 from .tools.gti_mcp_tool import GTIMCPTool
                 self.gti_behaviour_analysis_tool = GTIMCPTool()
+                self.gti_infrastructure_tool = GTIMCPTool()
             except (ImportError, ValueError) as e:
                 print(f"❌ Failed to import or configure MCP tools: {e}")
-                print("📡 Falling back to Direct GTI API for malware analysis")
+                print("📡 Falling back to Direct GTI API for malware and infrastructure analysis")
                 from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
                 self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool()
+                from .tools.gti_ip_address_tool import GTIIpAddressTool
+                from .tools.gti_domain_tool import GTIDomainTool
+                self.gti_infrastructure_tool = [GTIIpAddressTool(), GTIDomainTool()]
         else:
-            print("📡 Malware agent using Direct GTI API")
+            print("📡 Malware and Infrastructure agents using Direct GTI API")
             from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
             self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool()
+            from .tools.gti_ip_address_tool import GTIIpAddressTool
+            from .tools.gti_domain_tool import GTIDomainTool
+            self.gti_infrastructure_tool = [GTIIpAddressTool(), GTIDomainTool()]
+
 
     @agent
     def triage_specialist(self) -> Agent:
@@ -68,9 +70,10 @@ class ThreatHuntingCrew():
     @agent
     def infrastructure_hunter(self) -> Agent:
         """Master Infrastructure Hunter and Campaign Correlation Expert"""
+        tools = self.gti_infrastructure_tool if isinstance(self.gti_infrastructure_tool, list) else [self.gti_infrastructure_tool]
         return Agent(
             config=self.agents_config['infrastructure_analysis_specialist'],
-            tools=[self.gti_ip_address_tool, self.gti_domain_tool]
+            tools=tools
         )
 
     # @agent

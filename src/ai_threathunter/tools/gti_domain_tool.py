@@ -8,7 +8,7 @@ import time
 class GTIDomainToolInput(BaseModel):
     """Input schema for the GTI Domain Tool."""
     domain: str = Field(..., description="The domain to analyze.")
-    relationship: str = Field("report", description="The relationship to query. 'report' by default")
+    relationship: str = Field("report", description="The relationship to query. Allowed values are 'report', 'communicating_files', 'downloaded_files', 'graphs', 'historical_whois', 'immediate_parent', 'parent', 'referrer_files', 'resolutions', 'siblings', 'subdomains', 'urls'.")
 
 class GTIDomainTool(BaseTool):
     name: str = "GTI Domain Tool"

@@ -8,7 +8,7 @@ import time
 class GTIIpAddressToolInput(BaseModel):
     """Input schema for the GTI IP Address Tool."""
     ip_address: str = Field(..., description="The IP address to analyze.")
-    relationship: str = Field("report", description="The relationship to query. 'report' by default")
+    relationship: str = Field("report", description="The relationship to query. Allowed values are 'report', 'communicating_files', 'downloaded_files', 'graphs', 'historical_whois', 'resolutions', 'urls'.")
 
 class GTIIpAddressTool(BaseTool):
     name: str = "GTI IP Address Tool"

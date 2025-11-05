@@ -4,7 +4,6 @@ initial_ioc_assessment:
     
     Your investigation has been initiated for the following IOC: {ioc}
 
-
     Your instructions are as follows:
 
     1.  **Identify IOC Type:** First, inspect the JSON and identify the IOC type by reading the value at the path `data.type`. It will be 'file', 'url', 'domain', or 'ip_address'.
@@ -31,6 +30,12 @@ initial_ioc_assessment:
         * If **GTI Verdict is MALICIOUS or SUSPICIOUS** and the **IOC Type is 'url', 'domain', or 'ip_address'**, the recommended action is to hand off to the **Infrastructure Analysis Agent**.
         * If **GTI Verdict is BENIGN**, the recommended action is to **close the alert**.
 
+    4.  **Analysis Reasoning:** Think like a Tier 1 SOC Analyst who must quickly triage and route IOCs based on GTI data. Focus on extracting the most relevant information to inform the next investigative step. Ensure clarity and conciseness in your report. When you discover something significant in the GTI data, highlight it in your justification to support your routing decision.
+
+    5. **Decision Logic**
+    * Base your priority on the evidence, not predetermined workflows.
+    * Do not hallucinate - only report the facts as what you see from the tools.
+
   expected_output: >
     ### IOC Threat Assessment: [IOC Value from data.id]
 
@@ -40,16 +45,22 @@ initial_ioc_assessment:
     | GTI Verdict          | [VERDICT_MALICIOUS]                           |
     | GTI Severity         | [SEVERITY_HIGH]                               |
     | Detection Ratio      | [e.g., 55/77]                                 |
+    | Threat Names         | [List of threat names or 'N/A']               |
+    | Associations         | [List of associations / contributing factors or 'N/A']                |
     | Key Context          | [C2, WHOIS Date, or AS Owner]                 |
-    
+
+    ## List of high-significant discoveries that requires specialist analysis
+
+    ## Investigation foundation context for follow-on specialist analysis
+
     ---
     **Verdict:** **Malicious**
     **Justification:** [The summarized description from the GTI assessment.]
-    **Recommended Action:** **Hand off to the Malware Analysis Agent for deep analysis.**
+    **Recommended Action:** **[Hand off to Malware Analysis Agent / Hand off to Infrastructure Analysis Agent / Close Alert]**
 
 deep_malware_behavioral_analysis:
   description: >
-    You are an Elite Malware Behavioral Analysis Expert. Your task is to conduct a deep behavioral analysis of a malicious file hash, building upon the initial findings from the Triage Specialist.
+    You are an Elite Malware Behavioral Analysis Expert. Your task is to conduct a deep behavioral analysis of a malicious file hash, building upon the initial findings from the Triage Specialist. You need to understand how the entire malware operates, identify key suspicious behaviors, and classify the threat. Your analysis will directly inform the next investigative steps.
 
     Your investigation has been initiated for the following IOC: {ioc}
 
@@ -61,7 +72,7 @@ deep_malware_behavioral_analysis:
 
     3.  **Identify Suspicious Patterns:** From the behavioral summary, identify and report on key suspicious activities. Focus on high-impact behaviors such as:
         *   Creation of ransomware notes.
-        *   Anomalous process chains (e.g., `excel.exe` spawning `powershell.exe`).
+        *   Anomalous process execution chains and/or parent-child relationships (e.g., `excel.exe` spawning `powershell.exe`).
         *   Suspicious registry key modifications.
         *   Outbound network connections to suspicious IPs or domains.
         *   Evidence of defense evasion techniques.
@@ -91,7 +102,7 @@ deep_malware_behavioral_analysis:
 
 infrastructure_campaign_correlation:
   description: >
-    You are a Master Infrastructure Hunter and Campaign Correlation Expert. Your mission is to analyze network IOCs (IPs, domains, URLs), map out the adversary's infrastructure, and identify connections to broader campaigns using the specific actions available in your tools.
+    You are a Master Infrastructure Hunter. Your mission is to analyze network IOCs (IPs, domains, URLs), map out the adversary's infrastructure, and expose any new infrastructure related to the initial IOC.
 
     Your investigation has been initiated for the following IOC: {ioc}
 
@@ -119,6 +130,8 @@ infrastructure_campaign_correlation:
 
     **Analytical Mindset:**
     Think like an investigator mapping a criminal network. Start with one lead, get the full story on it, find its connections, and then investigate those new leads. Use the specific actions (`get_domain_report`, `get_entities_related_to_an_ip_address`, etc.) as your primary investigative tools. Do not use the generic `lookup_ioc` action. Base all findings strictly on the output from your tools.
+    Consider the broader campaign context as you map infrastructure relationships. Look for patterns that suggest coordination, such as shared hosting, similar registration details, or temporal overlaps.
+
   expected_output: >
     ### Infrastructure and Campaign Analysis Report
 

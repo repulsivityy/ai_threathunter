@@ -31,9 +31,10 @@ nest_asyncio.apply()
 
 class GTIMCPToolInput(BaseModel):
     """Input schema for the unified GTI MCP Tool."""
-    action: Literal['lookup_ioc', 'get_behaviour_summary'] = Field(..., description="The action to perform.")
+    action: Literal['lookup_ioc', 'get_behaviour_summary', 'get_domain_relationships', 'get_ip_relationships'] = Field(..., description="The action to perform.")
     ioc: str = Field(..., description="The IOC to analyze (IP, domain, hash, or URL).")
     ioc_type: Optional[Literal['ip', 'domain', 'hash', 'url']] = Field(None, description="Type of IOC for 'lookup_ioc' action.")
+    relationship: Optional[str] = Field(None, description="The relationship to query for 'get_domain_relationships' and 'get_ip_relationships' actions.")
 
 
 class GTIMCPTool(BaseTool):
@@ -47,6 +48,8 @@ class GTIMCPTool(BaseTool):
         "Performs various actions using the GTI MCP server. "
         "Use action 'lookup_ioc' for general threat intelligence on an IP, domain, hash, or URL. "
         "Use action 'get_behaviour_summary' for deep behavioral analysis of a file hash."
+        "Use action 'get_domain_relationships' to get relationships for a domain."
+        "Use action 'get_ip_relationships' to get relationships for an IP address."
     )
     args_schema: Type[BaseModel] = GTIMCPToolInput
     mcp_command: Optional[str] = None
@@ -113,7 +116,7 @@ class GTIMCPTool(BaseTool):
                 )
             return error_msg
 
-    def _run(self, action: str, ioc: str, ioc_type: Optional[str] = None) -> str:
+    def _run(self, action: str, ioc: str, ioc_type: Optional[str] = None, relationship: Optional[str] = None) -> str:
         """Dispatches the action to the appropriate method."""
         try:
             if action == 'lookup_ioc':
@@ -122,8 +125,16 @@ class GTIMCPTool(BaseTool):
                 return self.loop.run_until_complete(self._lookup_ioc(ioc, ioc_type))
             elif action == 'get_behaviour_summary':
                 return self.loop.run_until_complete(self._get_behaviour_summary(ioc))
+            elif action == 'get_domain_relationships':
+                if not relationship:
+                    return "Error: 'relationship' is required for the 'get_domain_relationships' action."
+                return self.loop.run_until_complete(self._get_domain_relationships(ioc, relationship))
+            elif action == 'get_ip_relationships':
+                if not relationship:
+                    return "Error: 'relationship' is required for the 'get_ip_relationships' action."
+                return self.loop.run_until_complete(self._get_ip_relationships(ioc, relationship))
             else:
-                return f"Error: Invalid action '{action}'. Available actions are 'lookup_ioc', 'get_behaviour_summary'."
+                return f"Error: Invalid action '{action}'. Available actions are 'lookup_ioc', 'get_behaviour_summary', 'get_domain_relationships', 'get_ip_relationships'."
         except Exception as e:
             return f"An error occurred in the unified GTI MCP tool: {str(e)}"
 
@@ -147,3 +158,11 @@ class GTIMCPTool(BaseTool):
     async def _get_behaviour_summary(self, file_hash: str) -> str:
         """Handles file behavioral analysis."""
         return await self._call_mcp_tool('get_file_behavior_summary', {'hash': file_hash})
+
+    async def _get_domain_relationships(self, domain: str, relationship: str) -> str:
+        """Handles domain relationship lookups."""
+        return await self._call_mcp_tool('get_domain_relationships', {'domain': domain, 'relationship': relationship})
+
+    async def _get_ip_relationships(self, ip_address: str, relationship: str) -> str:
+        """Handles IP address relationship lookups."""
+        return await self._call_mcp_tool('get_ip_address_relationships', {'ip_address': ip_address, 'relationship': relationship})
