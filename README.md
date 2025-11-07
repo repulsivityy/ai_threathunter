@@ -108,5 +108,9 @@ ai_threathunter/
 - [] Orchestrator Agent - Acts as the correlation from all the output and provides the final verdict
 
 ### Tools
-- [] MCP servers for agents to use 
+- [x] MCP servers for agents to use 
 - [] Shodan for Infra Hunter Agent
+
+
+### Bug
+- [] Malware Agent doesn't pass network indicators to Infra Hunter Agent via API. Works if both agents have access to MCP. 

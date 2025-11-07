@@ -91,6 +91,17 @@ This section summarizes the development and refinement steps taken to build the 
     - A new tool, `gti_ip_address_tool.py`, was created to provide dedicated infrastructure analysis capabilities for IP addresses via the direct GTI API.
     - The `infrastructure_hunter` agent in `crew.py` was equipped with this new tool to enable it to perform its analysis directly against the API.
 
+10. **Debugging and Hardening the Behavioral Analysis Tool:**
+    - An intermittent failure was observed in the `GTIBehaviourAnalysisTool`, where it would crash when processing certain API responses.
+    - By providing a sample API response, Gemini was able to diagnose the issue: the tool's parsing logic was not robust enough to handle variations in the response structure, leading to `KeyError` exceptions.
+    - The tool was hardened by updating the `_format_behavior_summary` function to use safe `.get()` access for all nested dictionary keys and to validate data types within lists, preventing the tool from crashing on valid but complex API data.
+
+11. **Enhancing Malware Agent for Deeper Investigation:**
+    - To make the Malware Analysis Agent a more powerful hunter, its instructions in `tasks.yaml` were significantly upgraded.
+    - The agent is now instructed to perform a **multi-layer investigation**. After analyzing the initial file, it must actively search the behavioral report for dropped files.
+    - If a suspicious dropped file is found, the agent is empowered to use its `GTI Behaviour Analysis Tool` a second time on the new file hash.
+    - Finally, it synthesizes the findings from both analyses into a single, comprehensive report, effectively building a more complete attack chain on its own.
+
 ## Challenges Encountered
 
 During the development and debugging process, several challenges were encountered and resolved. This section documents them for future reference.

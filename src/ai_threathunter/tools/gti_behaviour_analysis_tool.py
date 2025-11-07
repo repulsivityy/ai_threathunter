@@ -99,18 +99,24 @@ class GTIBehaviourAnalysisTool(BaseTool):
 
         # Provide the full list of processes for the agent to analyze
         response += format_list("Processes Created", data.get('processes_created', []))
+        response += format_list("Command Executions", data.get('command_executions', []))
+        response += format_list("Process Injections", data.get('process_injections', []))
+        response += format_list("Process Terminated", data.get('processes_terminated', []))
         
         # For other items, we can still limit them to keep the summary concise
-        response += format_list("Files Opened", data.get('files_opened', []), limit=10)
-        response += format_list("Registry Keys Opened", data.get('registry_keys_opened', []), limit=10)
-        response += format_list("IP Traffic", [f"{ip.get('destination_ip', 'N/A')}:{ip.get('destination_port', 'N/A')}" for ip in data.get('ip_traffic', [])], limit=10)
-        response += format_list("HTTP/HTTPS Requests", data.get('http_conversations', []), limit=10)
-        response += format_list("DNS Lookups", [f"{lookup.get('hostname', 'N/A')}" for lookup in data.get('dns_lookups', [])], limit=10)
-        response += format_list("Files Written", data.get('files_written', []), limit=10)
-        response += format_list("Registry Keys Set", [f"{reg.get('key', 'N/A')}: {reg.get('value', 'N/A')}" for reg in data.get('registry_keys_set', [])], limit=10)
-        response += format_list("Mutexes Created", data.get('mutexes_created', []), limit=10)
-        response += format_list("Mutexes Opened", data.get('mutexes_opened', []), limit=10)
-        
+        response += format_list("Files Opened", data.get('files_opened', []), limit=20)
+        response += format_list("Files Written", data.get('files_written', []), limit=20)
+        response += format_list("Registry Keys Set", [f"{reg.get('key', 'N/A')}: {reg.get('value', 'N/A')}" for reg in data.get('registry_keys_set', []) if isinstance(reg, dict)], limit=20)
+        response += format_list("Registry Keys Opened", [f"{reg.get('key', 'N/A')}" for reg in data.get('registry_keys_opened', []) if isinstance(reg, dict)], limit=20)
+        response += format_list("IP Traffic", [f"{ip.get('destination_ip', 'N/A')}:{ip.get('destination_port', 'N/A')}" for ip in data.get('ip_traffic', []) if isinstance(ip, dict)], limit=20)
+        response += format_list("Memory Pattern IP", data.get('memory_pattern_ips', []), limit=20)
+        response += format_list("HTTP/HTTPS Requests", [conv.get('url', 'N/A') for conv in data.get('http_conversations', []) if isinstance(conv, dict)], limit=20)
+        response += format_list("DNS Lookups", [f"{lookup.get('hostname', 'N/A')}" for lookup in data.get('dns_lookups', []) if isinstance(lookup, dict)], limit=20)
+        response += format_list("Mutexes Created", data.get('mutexes_created', []), limit=20)
+        response += format_list("Mutexes Opened", data.get('mutexes_opened', []), limit=20)
+        response += format_list("Files Attribute Changed", data.get('files_attribute_changed', []), limit=20)
+        response += format_list("Windows Hidden", data.get('windows_hidden', []), limit=20)
+
         return response
 
 
