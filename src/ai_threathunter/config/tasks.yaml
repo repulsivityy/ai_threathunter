@@ -137,6 +137,10 @@ infrastructure_campaign_correlation:
         *   State your confidence level (High, Medium, Low) on whether this is a coordinated campaign, and provide the evidence (e.g., "Domain X and Domain Y are part of a campaign because they are both hosted on the malicious IP address Z.").
         *   List all newly discovered IOCs.
 
+    5.  **Key Considerations:**
+        *  When making pivots, particularly with network indicators, make sure that the date of the resolved relationships makes sense (e.g., if a domain resolved to an IP BEFORE the initial IOC had the IP, it may not be relevant)
+
+
     **Analytical Mindset:**
     Think like an investigator mapping a criminal network. Start with one lead, get the full story on it, find its connections, and then investigate those new leads. Use the specific actions (`get_domain_report`, `get_entities_related_to_an_ip_address`, etc.) as your primary investigative tools. Do not use the generic `lookup_ioc` action. Base all findings strictly on the output from your tools.
     Consider the broader campaign context as you map infrastructure relationships. Look for patterns that suggest coordination, such as shared hosting, similar registration details, or temporal overlaps.
