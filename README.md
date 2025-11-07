@@ -29,11 +29,15 @@ The agents use tools to interact with threat intelligence sources like Google Th
 
 ```mermaid
 graph TD
+flowchart TD
     A[🔍 IOC Input] --> B{Triage Specialist};
     B -- File IOC --> C[Malware Analysis Agent];
     B -- Network IOC --> D[Infrastructure Analysis Agent];
-    C -- Network IOCs found --> D;
-    D -- Needs deeper file analysis --> C;
+    C -- updates --> E[Orchestrator Agent]
+    D -- updates --> E
+    E -- Suspicious Network IOCs found --> D
+    E -- Suspicious Files Found --> C
+    E -- Informs --> F[Threat Hunter Agent]
 ```
 
 ## Installation

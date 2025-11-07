@@ -119,7 +119,6 @@ class GTIBehaviourAnalysisTool(BaseTool):
 
         return response
 
-
     def _get_hash_behavior_summary(self, hash_value: str) -> str:
         """Get and format the behavior summary for a hash."""
         print(f"🔍 Getting behavior summary for hash: {hash_value}")
