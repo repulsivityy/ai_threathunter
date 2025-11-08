@@ -25,20 +25,15 @@ The agents use tools to interact with threat intelligence sources like Google Th
 
 ## Planned Workflow
 
-### 🔄 **Dynamic Agent Collaboration**
-
+The current workflow is **sequential**:
 ```mermaid
 graph TD
-flowchart TD
-    A[🔍 IOC Input] --> B{Triage Specialist};
-    B -- File IOC --> C[Malware Analysis Agent];
-    B -- Network IOC --> D[Infrastructure Analysis Agent];
-    C -- updates --> E[Orchestrator Agent]
-    D -- updates --> E
-    E -- Suspicious Network IOCs found --> D
-    E -- Suspicious Files Found --> C
-    E -- Informs --> F[Threat Hunter Agent]
+    A[🔍 IOC Input] --> B(Triage Specialist);
+    B --> C(Malware Analysis Agent);
+    C --> D(Infrastructure Analysis Agent);
 ```
+
+A dynamic, orchestrated workflow is planned for a future release.
 
 ## Installation
 
@@ -50,7 +45,7 @@ flowchart TD
 
 2.  **Create a virtual environment and activate it:**
     ```bash
-    python -m venv venv
+    python3 -m venv venv
     source venv/bin/activate  # On Windows use `venv\Scripts\activate`
     ```
 
@@ -61,29 +56,30 @@ flowchart TD
 
 4.  **Set up your environment variables:**
     - Create a `.env` file by copying the `.env.example` file.
-    - Add your API keys for the services you want to use (e.g., `GTI_API_KEY`).
+    - Add your `GTI_API_KEY` for Google Threat Intelligence.
+    - **Configure the agent backend**: Set `USE_GTI_MCP=true` to use the MCP server backend for specialist agents, or `false` to use direct API calls.
 
 ## Usage
 
-You can run an investigation from the command line.
+The application is controlled via a command-line interface.
 
-### Standard Mode
+### Run a Single Investigation
 
-To run a standard investigation, use the `ai_threathunter.py` script:
-
+To investigate a single IOC, use the `investigate` command:
 ```bash
-python ai_threathunter.py investigate <IOC>
+python3 ai_threathunter.py investigate {IOC}
 ```
-You will be prompted to enter an IOC.
-
-### Debug Mode
-
-For more verbose output, you can use the `run_debug.py` script. This is helpful for development and troubleshooting.
-
+*Example:*
 ```bash
-python run_debug.py <IOC_TO_INVESTIGATE>
+python3 ai_threathunter.py investigate celebratioopz.shop
 ```
-If you don't provide an IOC on the command line, you will be prompted to enter one.
+
+### Enable Debug Mode
+
+For more verbose output and to save detailed logs of all API calls, update the DEBUG_API_CALLS environment variable to TRUE:
+```bash
+export DEBUG_API_CALLS=TRUE
+```
 
 ## Project Structure
 
@@ -108,13 +104,23 @@ ai_threathunter/
 
 ### Agents
 - [x] Infra Analysis Agent - Investigates network indicators
-- [] Threat Hunter Agent - Correlates and provide hunt hypothesis for continued hunts
-- [] Orchestrator Agent - Acts as the correlation from all the output and provides the final verdict
+- [ ] Threat Hunter Agent - Correlates and provide hunt hypothesis for continued hunts
+- [ ] Orchestrator Agent - Acts as the correlation from all the output and provides the final verdict
 
 ### Tools
 - [x] MCP servers for agents to use 
-- [] Shodan for Infra Hunter Agent
+- [ ] Shodan for Infra Hunter Agent
 
-
-### Bug
-- [] Malware Agent doesn't pass network indicators to Infra Hunter Agent via API. Works if both agents have access to MCP. 
+### Final Workflow
+```mermaid
+graph TD
+flowchart TD
+    A[🔍 IOC Input] --> B{Triage Specialist};
+    B -- File IOC --> C[Malware Analysis Agent];
+    B -- Network IOC --> D[Infrastructure Analysis Agent];
+    C -- updates --> E[Orchestrator Agent]
+    D -- updates --> E
+    E -- Suspicious Network IOCs found --> D
+    E -- Suspicious Files Found --> C
+    E -- Informs --> F[Threat Hunter Agent]
+```

@@ -84,6 +84,11 @@ deep_malware_behavioral_analysis:
         *   Your report must clearly state the relationship between the files (e.g., "The initial malware `[hash_A]` dropped a second-stage payload `[hash_B]`).
         *   Detail the combined behaviors to build a more complete picture of the attack chain.
         *   List all infrastructure indicators (IPs, domains) discovered from all analyzed files.
+
+    5.  ** Key Considerations**
+        *  For any relationships, use the mermaid diagram syntax to illustrate connections
+        *   Ensure clarity in explaining how the files relate to each other and the overall threat.
+
   expected_output: >
     ### Deep Malware Behavioral Analysis Report
 
@@ -119,7 +124,7 @@ infrastructure_campaign_correlation:
 
     1.  **Get Baseline Intelligence:**
         *   Start by determining the IOC type (domain, IP, or URL).
-        *   Use the most specific tool action to get a full report on the initial IOC. For example, if the IOC is a domain, use the `get_domain_report` action. This provides the initial context for your investigation.
+        *   Use the most specific tool action to get a full report on the initial IOC. For a domain, use `get_domain_report`; for an IP address, use `get_ip_address_report`. This provides the initial context for your investigation.
 
     2.  **Expand and Pivot:**
         *   Your primary goal is to discover related infrastructure. Use the "get entities related to..." actions to expand your search.
@@ -139,7 +144,7 @@ infrastructure_campaign_correlation:
 
     5.  **Key Considerations:**
         *  When making pivots, particularly with network indicators, make sure that the date of the resolved relationships makes sense (e.g., if a domain resolved to an IP BEFORE the initial IOC had the IP, it may not be relevant)
-
+        *  For any relationships, use the mermaid diagram syntax to illustrate connections
 
     **Analytical Mindset:**
     Think like an investigator mapping a criminal network. Start with one lead, get the full story on it, find its connections, and then investigate those new leads. Use the specific actions (`get_domain_report`, `get_entities_related_to_an_ip_address`, etc.) as your primary investigative tools. Do not use the generic `lookup_ioc` action. Base all findings strictly on the output from your tools.

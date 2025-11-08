@@ -145,14 +145,8 @@ class ThreatHuntingCrew():
     def crew(self) -> Crew:
         """Creates the Smart Threat Hunting crew"""
         return Crew(
-            agents=[self.triage_specialist(), self.malware_specialist(), self.infrastructure_hunter()],  # Automatically populated by @agent decorators
-            tasks=[
-                self.initial_assessment(),
-                self.malware_analysis(),
-                self.infrastructure_correlation(),
-            #    self.campaign_synthesis(),
-            #    self.intelligence_orchestration()
-            ],    # Automatically populated by @task decorators
+            agents=self.agents,  # Automatically populated by @agent decorators
+            tasks=self.tasks,    # Automatically populated by @task decorators
             process=Process.sequential,  # Sequential with automatic context passing
             verbose=True,
             memory=False

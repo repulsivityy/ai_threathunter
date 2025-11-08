@@ -31,10 +31,23 @@ nest_asyncio.apply()
 
 class GTIMCPToolInput(BaseModel):
     """Input schema for the unified GTI MCP Tool."""
-    action: Literal['lookup_ioc', 'get_behaviour_summary', 'get_domain_relationships', 'get_ip_relationships'] = Field(..., description="The action to perform.")
+    action: Literal[
+        'lookup_ioc', 
+        'get_behaviour_summary', 
+        'get_entities_related_to_an_ip_address', 
+        'get_entities_related_to_a_domain',
+        'get_domain_report',
+        'get_ip_address_report',
+        'get_url_report',
+        'get_file_report',
+        'get_entities_related_to_a_file',
+        'get_entities_related_to_an_url'
+    ] = Field(..., description="The action to perform.")
     ioc: str = Field(..., description="The IOC to analyze (IP, domain, hash, or URL).")
     ioc_type: Optional[Literal['ip', 'domain', 'hash', 'url']] = Field(None, description="Type of IOC for 'lookup_ioc' action.")
-    relationship: Optional[str] = Field(None, description="The relationship to query for 'get_domain_relationships' and 'get_ip_relationships' actions.")
+    relationship_name: Optional[str] = Field(None, description="The name of the relationship to query for 'get_entities_related_to_a_domain' action.")
+    descriptors_only: Optional[bool] = Field(None, description="Whether to return only descriptors for related entities.")
+    limit: Optional[int] = Field(None, description="Maximum number of related entities to return.")
 
 
 class GTIMCPTool(BaseTool):
@@ -48,8 +61,11 @@ class GTIMCPTool(BaseTool):
         "Performs various actions using the GTI MCP server. "
         "Use action 'lookup_ioc' for general threat intelligence on an IP, domain, hash, or URL. "
         "Use action 'get_behaviour_summary' for deep behavioral analysis of a file hash."
-        "Use action 'get_domain_relationships' to get relationships for a domain."
-        "Use action 'get_ip_relationships' to get relationships for an IP address."
+        "Use action 'get_entities_related_to_a_domain' to get entities related to a domain."
+        "Use action 'get_domain_report' to get a full report for a domain."
+        "Use action 'get_ip_address_report' to get a full report for an IP address."
+        "Use action 'get_url_report' to get a full report for a URL."       
+        "Use action 'get_file_report' to get a full report for a file hash."
     )
     args_schema: Type[BaseModel] = GTIMCPToolInput
     mcp_command: Optional[str] = None
@@ -116,7 +132,7 @@ class GTIMCPTool(BaseTool):
                 )
             return error_msg
 
-    def _run(self, action: str, ioc: str, ioc_type: Optional[str] = None, relationship: Optional[str] = None) -> str:
+    def _run(self, action: str, ioc: str, ioc_type: Optional[str] = None, relationship: Optional[str] = None, relationship_name: Optional[str] = None, descriptors_only: Optional[bool] = None, limit: Optional[int] = None) -> str:
         """Dispatches the action to the appropriate method."""
         try:
             if action == 'lookup_ioc':
@@ -125,23 +141,47 @@ class GTIMCPTool(BaseTool):
                 return self.loop.run_until_complete(self._lookup_ioc(ioc, ioc_type))
             elif action == 'get_behaviour_summary':
                 return self.loop.run_until_complete(self._get_behaviour_summary(ioc))
-            elif action == 'get_domain_relationships':
-                if not relationship:
-                    return "Error: 'relationship' is required for the 'get_domain_relationships' action."
-                return self.loop.run_until_complete(self._get_domain_relationships(ioc, relationship))
-            elif action == 'get_ip_relationships':
-                if not relationship:
-                    return "Error: 'relationship' is required for the 'get_ip_relationships' action."
-                return self.loop.run_until_complete(self._get_ip_relationships(ioc, relationship))
+            elif action == 'get_entities_related_to_an_ip_address':
+                if not relationship_name:
+                    return "Error: 'relationship_name' is required for the 'get_entities_related_to_an_ip_address' action."
+                if descriptors_only is None:
+                    return "Error: 'descriptors_only' is required for the 'get_entities_related_to_an_ip_address' action."
+                return self.loop.run_until_complete(self._get_entities_related_to_an_ip_address(ioc, relationship_name, descriptors_only, limit))
+            elif action == 'get_entities_related_to_a_domain':
+                if not relationship_name:
+                    return "Error: 'relationship_name' is required for the 'get_entities_related_to_a_domain' action."
+                if descriptors_only is None:
+                    return "Error: 'descriptors_only' is required for the 'get_entities_related_to_a_domain' action."
+                return self.loop.run_until_complete(self._get_entities_related_to_a_domain(ioc, relationship_name, descriptors_only, limit))
+            elif action == 'get_domain_report':
+                return self.loop.run_until_complete(self._get_domain_report(ioc))
+            elif action == 'get_ip_address_report':
+                return self.loop.run_until_complete(self._get_ip_address_report(ioc))
+            elif action == 'get_url_report':
+                return self.loop.run_until_complete(self._get_url_report(ioc))
+            elif action == 'get_file_report':
+                return self.loop.run_until_complete(self._get_file_report(ioc))
+            elif action == 'get_entities_related_to_a_file':
+                if not relationship_name:
+                    return "Error: 'relationship_name' is required for the 'get_entities_related_to_a_file' action."
+                if descriptors_only is None:
+                    return "Error: 'descriptors_only' is required for the 'get_entities_related_to_a_file' action."
+                return self.loop.run_until_complete(self._get_entities_related_to_a_file(ioc, relationship_name, descriptors_only, limit))
+            elif action == 'get_entities_related_to_an_url':
+                if not relationship_name:
+                    return "Error: 'relationship_name' is required for the 'get_entities_related_to_an_url' action."
+                if descriptors_only is None:
+                    return "Error: 'descriptors_only' is required for the 'get_entities_related_to_an_url' action."
+                return self.loop.run_until_complete(self._get_entities_related_to_an_url(ioc, relationship_name, descriptors_only, limit))
             else:
-                return f"Error: Invalid action '{action}'. Available actions are 'lookup_ioc', 'get_behaviour_summary', 'get_domain_relationships', 'get_ip_relationships'."
+                return f"Error: Invalid action '{action}'. Available actions are 'lookup_ioc', 'get_behaviour_summary', 'get_domain_relationships', 'get_entities_related_to_an_ip_address', 'get_entities_related_to_a_domain', 'get_domain_report', 'get_ip_report', 'get_url_report', 'get_file_report', 'get_entities_related_to_a_file', 'get_entities_related_to_an_url'."
         except Exception as e:
             return f"An error occurred in the unified GTI MCP tool: {str(e)}"
 
     async def _lookup_ioc(self, ioc: str, ioc_type: str) -> str:
         """Handles general IOC lookups."""
         tool_mapping = {
-            'hash': 'get_file_report', 'ip': 'get_ip_report',
+            'hash': 'get_file_report', 'ip': 'get_ip_address_report',
             'domain': 'get_domain_report', 'url': 'get_url_report'
         }
         tool_name = tool_mapping.get(ioc_type)
@@ -159,10 +199,26 @@ class GTIMCPTool(BaseTool):
         """Handles file behavioral analysis."""
         return await self._call_mcp_tool('get_file_behavior_summary', {'hash': file_hash})
 
-    async def _get_domain_relationships(self, domain: str, relationship: str) -> str:
-        """Handles domain relationship lookups."""
-        return await self._call_mcp_tool('get_domain_relationships', {'domain': domain, 'relationship': relationship})
+    async def _get_entities_related_to_an_ip_address(self, ip_address: str, relationship_name: str, descriptors_only: bool, limit: Optional[int] = None) -> str:
+        """Handles IP address entity relationship lookups."""
+        return await self._call_mcp_tool('get_entities_related_to_an_ip_address', {'ip_address': ip_address, 'relationship_name': relationship_name, 'descriptors_only': descriptors_only, 'limit': limit})
 
-    async def _get_ip_relationships(self, ip_address: str, relationship: str) -> str:
-        """Handles IP address relationship lookups."""
-        return await self._call_mcp_tool('get_ip_address_relationships', {'ip_address': ip_address, 'relationship': relationship})
+    async def _get_entities_related_to_a_domain(self, domain: str, relationship_name: str, descriptors_only: bool, limit: Optional[int] = None) -> str:
+        """Handles domain entity relationship lookups."""
+        return await self._call_mcp_tool('get_entities_related_to_a_domain', {'domain': domain, 'relationship_name': relationship_name, 'descriptors_only': descriptors_only, 'limit': limit})
+
+    async def _get_domain_report(self, domain: str) -> str:
+        """Handles domain report lookups."""
+        return await self._call_mcp_tool('get_domain_report', {'domain': domain})
+
+    async def _get_ip_address_report(self, ip_address: str) -> str:
+        """Handles IP address report lookups."""
+        return await self._call_mcp_tool('get_ip_address_report', {'ip_address': ip_address})
+
+    async def _get_url_report(self, url: str) -> str:
+        """Handles URL report lookups."""
+        return await self._call_mcp_tool('get_url_report', {'url': url})
+
+    async def _get_file_report(self, file_hash: str) -> str:
+        """Handles file report lookups."""
+        return await self._call_mcp_tool('get_file_report', {'hash': file_hash})

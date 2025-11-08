@@ -99,8 +99,20 @@ This section summarizes the development and refinement steps taken to build the 
 11. **Enhancing Malware Agent for Deeper Investigation:**
     - To make the Malware Analysis Agent a more powerful hunter, its instructions in `tasks.yaml` were significantly upgraded.
     - The agent is now instructed to perform a **multi-layer investigation**. After analyzing the initial file, it must actively search the behavioral report for dropped files.
-    - If a suspicious dropped file is found, the agent is empowered to use its `GTI Behaviour Analysis Tool` a second time on the new file hash.
+    - If a suspicious dropped file is found, a new `kickoff` is initiated to perform a full behavioral analysis on this new hash.
     - Finally, it synthesizes the findings from both analyses into a single, comprehensive report, effectively building a more complete attack chain on its own.
+
+12. **Debugging and Correcting the Unified MCP Tool:**
+    - An investigation into a domain IOC (`celebratioopz.shop`) revealed that the `gti_mcp_tool.py` wrapper was still causing agent errors.
+    - The agent was getting confused by contradictory information: the tool's description and input schema listed the correct action `get_ip_address_report`, but the internal dispatcher logic and error messages still referred to the old `get_ip_report`. A similar issue existed for the `relationship` vs. `relationship_name` parameters.
+    - The `gti_mcp_tool.py` file was systematically corrected to align the input schema, the `description` string, the `_run` dispatcher, and all handler methods, ensuring consistent and accurate action and parameter names.
+    - The `tasks.yaml` file was also updated to provide more explicit instructions to the `infrastructure_hunter` agent, removing any ambiguity about which tool action to use for IP addresses.
+
+13. **Investigating and Correcting Agent Routing Logic:**
+    - It was observed that a domain IOC was incorrectly being routed to the `malware_specialist` instead of the `infrastructure_hunter`.
+    - Analysis of `crew.py` revealed the root cause: the crew was configured with a `Process.sequential` workflow, which forces tasks to run in a fixed order regardless of the IOC type.
+    - An attempt was made to switch to `Process.hierarchical` to allow the `triage_specialist` to act as a manager and delegate tasks dynamically. This resulted in an `LLM Provider NOT provided` error, indicating a deeper configuration issue with using an agent as a manager.
+    - As a temporary measure, the workflow was reverted to `Process.sequential`. The user decided to address the dynamic routing issue in the future with a dedicated orchestration agent.
 
 ## Challenges Encountered
 
@@ -121,6 +133,14 @@ During the development and debugging process, several challenges were encountere
 4.  **Asyncio and GeneratorExit Errors:**
     - **Problem:** After fixing the Pydantic validation error, the application would still fail with a `RuntimeError: async generator ignored GeneratorExit` and `asyncio.exceptions.CancelledError`.
     - **Resolution:** The `gti_mcp_tool.py` was refactored to manage the `stdio_client` and `ClientSession` contexts within the `_call_mcp_tool` method. This ensures that the connection is established and torn down for each tool call, avoiding the complexities of managing a long-lived connection in the tool's lifecycle.
+
+5.  **Agent Confusion due to Inconsistent Tool Definition:**
+    - **Problem:** The `infrastructure_hunter` agent would enter a loop, repeatedly trying to call actions like `get_ip_report` or passing incorrect parameters like `relationship` because of conflicting information between the tool's schema, its description, and its internal logic.
+    - **Resolution:** The `gti_mcp_tool.py` was thoroughly reviewed and modified to ensure the `GTIMCPToolInput` schema, the main `description` string, the `_run` method's dispatcher, and all handler functions used a consistent and correct set of action and parameter names (e.g., `get_ip_address_report`, `relationship_name`).
+
+6.  **Incorrect Agent Routing in Sequential Workflow:**
+    - **Problem:** A domain IOC was incorrectly assigned to the `malware_specialist` because the crew's `Process.sequential` setting forced a rigid execution order.
+    - **Resolution:** The issue was identified, and a switch to `Process.hierarchical` was attempted. This failed due to an LLM provider error. The crew was reverted to `Process.sequential` with the plan to implement a more robust orchestration agent in the future to handle dynamic routing.
 
 ## Roadmap
 
