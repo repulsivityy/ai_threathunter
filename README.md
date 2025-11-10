@@ -114,7 +114,6 @@ ai_threathunter/
 ### Final Workflow
 ```mermaid
 graph TD
-flowchart TD
     A[🔍 IOC Input] --> B{Triage Specialist};
     B -- File IOC --> C[Malware Analysis Agent];
     B -- Network IOC --> D[Infrastructure Analysis Agent];
