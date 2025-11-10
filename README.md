@@ -110,6 +110,8 @@ ai_threathunter/
 ### Tools
 - [x] MCP servers for agents to use 
 - [ ] Shodan for Infra Hunter Agent
+- [ ] URLScan for Infra Hunter Agent
+- [ ] Ghidra (or similar) for Malware analysis agent
 
 ### Final Workflow
 ```mermaid
