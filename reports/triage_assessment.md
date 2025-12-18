@@ -5,9 +5,9 @@
 | Verdict              | MALICIOUS                 |
 | Severity             | MEDIUM                             |
 | Score                | 75                                       |
-| Threat Actors        | UNC6492 (APT43 subcluster)                         |
-| Malware Families     | LOGICBURST                                    |
+| Threat Actors        | UNC6492                         |
+| Malware Families     | LOGICBURST                         |
 ---
 **Verdict:** **MALICIOUS**
-**Justification:** The file hash has a verdict of MALICIOUS with a score of 75. It is associated with high confidence to the threat actor group UNC6492 (an APT43 subcluster) and the malware family LOGICBURST. The file is part of a North Korean espionage campaign targeting South Korean government, healthcare, and scientific research sectors.
+**Justification:** The GTI tool returned a `VERDICT_MALICIOUS` with a score of `75`. The file is associated with high confidence to the threat actor `UNC6492` and the `LOGICBURST` malware family, which is a C++ downloader used in North Korean espionage campaigns.
 **Recommended Action:** **Hand off to Malware Analysis Agent**

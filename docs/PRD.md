@@ -77,3 +77,25 @@ To build an autonomous, Graph-RAG powered threat intelligence platform that not 
 - **Coverage**: Increase in the number of successfully mapped infrastructure nodes per investigation.
 - **Autonomy**: Ability of the Orchestrator to resolve complex cases without human intervention (measured by successful completion of multi-step pivots).
 - **Usability**: User satisfaction with the frontend and graph visualization.
+
+## 6. Known Bugs & Optimization Backlog
+
+### Performance Optimizations
+- [ ] **Cache Cleanup Inefficiency**: `CacheManager._cleanup_expired()` runs on every write operation. Should implement batch cleanup (e.g., every 50 writes) to reduce I/O overhead by ~98%.
+- [ ] **Mermaid ID Caching**: `InvestigationGraph.to_mermaid()` performs repeated string operations. Add caching for `safe_id()` conversions to optimize large graph exports.
+- [ ] **Response Parsing**: `GTIMCPTool` parsing methods could be optimized with dict unpacking to reduce repeated `dict.get()` calls.
+
+### Code Quality & Maintainability
+- [ ] **Monolithic Parsing Methods**: `_parse_ioc_response` (69 lines) and `_parse_behavior_response` (67 lines) should be split into smaller, testable helper functions (e.g., `_extract_domain_resolutions`, `_extract_url_hosts`).
+- [ ] **Configuration Management**: Hardcoded values (cache TTL, report paths, timeouts) should be moved to a centralized `config/settings.py` for easier configuration.
+- [ ] **MCP Timeout Configuration**: Add configurable timeouts per tool action (e.g., 30s for `lookup_ioc`, 60s for `get_behaviour_summary`) instead of hardcoded 30s default.
+
+### Testing & Documentation
+- [ ] **Unit Test Coverage**: No unit tests currently exist. Priority: `InvestigationGraph`, `CacheManager`, `GTIMCPTool` parsing methods.
+- [ ] **Missing Docstrings**: Many methods lack comprehensive docstrings explaining parameters and return values (e.g., `add_analysis_result`, `_parse_ioc_response`).
+
+### Completed Optimizations
+- [x] **Duplicate Edge Detection**: Added to `InvestigationGraph.add_edge()` with logging (prevents data loss).
+- [x] **DRY Violation - Graph Export**: Created shared `append_graph_to_report()` helper in `utils/report_utils.py`, eliminated ~30 lines of duplicate code.
+- [x] **Improved Error Handling**: Graph export now handles `FileNotFoundError` and `PermissionError` specifically.
+

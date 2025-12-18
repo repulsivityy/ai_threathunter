@@ -75,6 +75,13 @@ class InvestigationGraph:
 
     def add_edge(self, edge: GraphEdge):
         """Add a relationship edge to the graph"""
+        # Check if edge exists and skip if identical
+        if self.graph.has_edge(edge.source, edge.target):
+            existing = self.graph[edge.source][edge.target]
+            if existing.get('type') == edge.type:
+                print(f"   ⚠️  Duplicate edge skipped: {edge.source} --[{edge.type}]--> {edge.target}")
+                return
+        
         self.graph.add_edge(edge.source, edge.target, 
                            type=edge.type, 
                            description=edge.description,

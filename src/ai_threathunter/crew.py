@@ -178,38 +178,24 @@ class ThreatHuntingCrew():
         
         print(f"✅ Investigation completed for IOC: {ioc}")
         
-        # [NEW] Append Graph to Report
-        try:
-            mermaid_graph = self.investigation_graph.to_mermaid()
-            report_path = 'reports/final_intelligence_report.md'
-            
-            with open(report_path, 'a') as f:
-                f.write("\n\n## Investigation Graph Visualization\n")
-                f.write("```mermaid\n")
-                f.write(mermaid_graph)
-                f.write("\n```\n")
-            print(f"📊 Graph visualization appended to {report_path}")
-            
-            # Update result object if it's string (CrewAI v0.1 vs newer)
-            final_report_content = ""
-            if os.path.exists(report_path):
-                with open(report_path, 'r') as f:
-                    final_report_content = f.read()
-            
-            return {
-                'status': 'completed',
-                'ioc': ioc,
-                'result': result,
-                'final_report': final_report_content
-            }
-        except Exception as e:
-            print(f"⚠️ Failed to append graph to report: {e}")
-            return {
-                'status': 'completed',
-                'ioc': ioc,
-                'result': result,
-                'final_report': str(result)
-            }
+        # Append graph visualization to report
+        from .utils.report_utils import append_graph_to_report
+        append_graph_to_report(self.investigation_graph)
+        
+        # Read final report if it exists
+        report_path = 'reports/final_intelligence_report.md'
+        final_report_content = ""
+        if os.path.exists(report_path):
+            with open(report_path, 'r') as f:
+                final_report_content = f.read()
+        
+        return {
+            'status': 'completed',
+            'ioc': ioc,
+            'result': result,
+            'final_report': final_report_content
+        }
+
 
 
 def main():
