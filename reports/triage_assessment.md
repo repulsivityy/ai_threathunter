@@ -1,15 +1,13 @@
-### IOC Threat Assessment: documentsec.online
+### IOC Threat Assessment: 3553d068f85437c23d08d89cac57fa70f78c50eb4ed3c032c37003b99cafc627
 | Metric               | Value                                         |
 | -------------------- | --------------------------------------------- |
-| IOC Type             | domain                                        |
-| Verdict              | MALICIOUS                                     |
-| Severity             | MEDIUM                                        |
-| Score                | 75                                            |
-| Threat Actors        | UNC4057                                       |
-| Malware Families     | Unknown malware                               |
+| IOC Type             | file                  |
+| Verdict              | MALICIOUS                 |
+| Severity             | MEDIUM                             |
+| Score                | 75                                       |
+| Threat Actors        | UNC6492 (APT43 subcluster)                         |
+| Malware Families     | LOGICBURST                                    |
 ---
 **Verdict:** **MALICIOUS**
-
-**Justification:** The domain received a threat score of 75 and a "MALICIOUS" verdict from the Google Threat Intelligence tool. The justification is based on multiple high-confidence findings, including detection by Google Safe Browsing, classification as malicious by a Mandiant analyst, and direct association with the Russian state-sponsored threat actor UNC4057 (also known as COLDRIVER) and related campaigns.
-
-**Recommended Action:** **Hand off to Infrastructure Analysis**
+**Justification:** The file hash has a verdict of MALICIOUS with a score of 75. It is associated with high confidence to the threat actor group UNC6492 (an APT43 subcluster) and the malware family LOGICBURST. The file is part of a North Korean espionage campaign targeting South Korean government, healthcare, and scientific research sectors.
+**Recommended Action:** **Hand off to Malware Analysis Agent**

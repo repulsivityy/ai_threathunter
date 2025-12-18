@@ -55,7 +55,23 @@ def run_investigation(ioc: str, investigation_type: Optional[str] = None, debug:
     print("=" * 80)
     
     try:
-        result = ThreatHuntingCrew().crew().kickoff(inputs=inputs)
+        # Instantiate crew to keep reference to the graph
+        threat_crew = ThreatHuntingCrew()
+        result = threat_crew.crew().kickoff(inputs=inputs)
+        
+        # [NEW] Append Graph to Report
+        try:
+            mermaid_graph = threat_crew.investigation_graph.to_mermaid()
+            report_path = 'reports/final_intelligence_report.md'
+            
+            with open(report_path, 'a') as f:
+                f.write("\n\n## Investigation Graph Visualization\n")
+                f.write("```mermaid\n")
+                f.write(mermaid_graph)
+                f.write("\n```\n")
+            print(f"📊 Graph visualization appended to {report_path}")
+        except Exception as e:
+            print(f"⚠️ Failed to append graph to report: {e}")
         
         print("\n" + "=" * 80)
         print("🎯 INVESTIGATION COMPLETED SUCCESSFULLY")

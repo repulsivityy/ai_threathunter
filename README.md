@@ -17,11 +17,15 @@ The agents use tools to interact with threat intelligence sources like Google Th
 
 ## Features
 
-- **Automated IOC Analysis**: Streamlines the investigation of file hashes, URLs, domains, and IP addresses.
-- **AI Agent Crew**: Utilizes a team of specialized AI agents for a comprehensive investigation, covering triage, malware analysis, and infrastructure mapping.
-- **Threat Intelligence Integration**: Connects to external threat intelligence APIs to gather evidence.
-- **Configurable Workflow**: Agent roles and tasks are defined in YAML files for easy customization.
-- **Selectable Backends**: Can be configured to use direct API calls or a more advanced MCP (Mission Control Platform) server.
+## Key Features
+- **Multi-Agent Orchestration**: Specialized agents for Triage, Malware Analysis, Infrastructure, and Correlation.
+- **Investigation Graph**: Centralized, graph-based state management that tracks all IOCs and their relationships (Edges) in real-time.
+- **Automated Visualization**: Generates Mermaid.js diagrams of the attack chain and embeds them directly into the final intelligence report.
+- **Contextual Awareness**: Agents can query the graph to see what other agents have found, preventing duplicate work and enabling true collaboration.
+- **Dual Mode Operation**: 
+    - **Direct API Mode**: Uses standard VirusTotal v3 API for lightweight queries.
+    - **MCP Mode (New)**: Integrates with the Google Threat Intelligence MCP Server for deep behavioral analysis and structured data extraction.
+- **Descriptive Intelligence**: Tools automatically provide context for why a relationship exists (e.g., "Domain resolves to IP", "File dropped by execution").
 
 ## Planned Workflow & Roadmap
 

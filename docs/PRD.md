@@ -18,32 +18,27 @@ To build an autonomous, Graph-RAG powered threat intelligence platform that not 
 
 ## 4. Roadmap & Requirements
 
-### Version 2: Orchestration & Two-Tier Memory
+### Version 2: Orchestration & Two-Tier Memory (Completed)
 **Objective**: Move from a linear workflow to a dynamic, intelligence-driven operation with structured memory.
 
 *   **Two-Tier Memory Architecture**:
-    *   **Tier 1: Short-Term Memory ("The Scratchpad")**:
-        *   **Technology**: In-memory Graph (using `NetworkX` or similar).
+    *   **Tier 1: Short-Term Memory ("The Scratchpad")** [Done]:
+        *   **Technology**: `NetworkX` In-memory Graph.
         *   **Purpose**: Acts as a dynamic workspace for the *current* investigation. Agents add nodes (IOCs) and edges (relationships) in real-time.
-        *   **Benefit**: Allows the Orchestrator to "see" the investigation topology instantly and prevents "lost in the middle" context issues.
-    *   **Tier 2: Long-Term Memory (Persistent Graph)**:
+        *   **Benefit**: Allows the Orchestrator to "see" the investigation topology instantly.
+    *   **Tier 2: Long-Term Memory (Persistent Graph)** [Planned]:
         *   **Technology**: Graph Database (Neo4j/ArangoDB) or Vector-augmented Graph.
-        *   **Purpose**: Stores *finalized* and high-confidence investigations.
-        *   **Benefit**: Enables historical correlation (e.g., "We saw this IP 3 months ago in a different campaign").
 
-*   **Orchestrator Agent**:
-    *   **Role**: Acts as the mission commander. It monitors the **Scratchpad**, identifies intelligence gaps (e.g., "This domain node has no resolved IPs"), and dynamically re-tasks agents.
+*   **Orchestrator Agent** [Done]:
+    *   **Role**: Acts as the mission commander. It monitors the **Scratchpad**, identifies intelligence gaps, and dynamically re-tasks agents.
     *   **Capabilities**:
-        *   Read/Write to the In-memory Graph.
-        *   Decide if further recursion is needed.
-        *   Synthesize a final verdict from the graph state.
+        *   Inspects the graph via `InvestigationGraphInspector`.
+        *   Identifying missing edges (e.g., Unresolved Domains).
+        *   Synthesizes final intelligence reports with embedded visualizations.
 
-*   **New Tooling Integration**:
-    *   **Goal**: Reduce reliance on a single source of truth (GTI) and gain diverse perspectives.
-    *   **Integration Candidates**:
-        *   **URLScan.io**: For visual confirmation of phishing pages and detailed URL structure analysis.
-        *   **Shodan**: For deep infrastructure scanning, port enumeration, and vulnerability assessment of suspect IPs.
-    *   **Requirement**: Agents must be able to query these new tools and incorporate the specific data formats into their context.
+*   **New Tooling Integration** [Done]:
+    *   **MCP Integration**: Successfully integrated Google Threat Intelligence MCP Server for deep behavioral analysis.
+    *   **Structured Parsing**: Tools now extract rich relationship data (e.g., "RESOLVES_TO") automatically.
 
 ### Version 3: The Knowledge Graph (Graph-RAG)
 **Objective**: Transform isolated investigation data into a persistent, queryable knowledge base that enables historical correlation and "reuse" of intelligence.
