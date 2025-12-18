@@ -40,7 +40,40 @@ To build an autonomous, Graph-RAG powered threat intelligence platform that not 
     *   **MCP Integration**: Successfully integrated Google Threat Intelligence MCP Server for deep behavioral analysis.
     *   **Structured Parsing**: Tools now extract rich relationship data (e.g., "RESOLVES_TO") automatically.
 
-### Version 3: The Knowledge Graph (Graph-RAG)
+### Version 3: Iterative Investigation Workflow (Planned)
+**Objective**: Transform the sequential workflow into an iterative, orchestrator-driven loop that mimics real threat intelligence analyst teams.
+
+**Current Limitation**: V2 follows a fixed path (Triage → Malware → Infrastructure → Orchestrator) with no backtracking. If Infrastructure Agent finds new hashes, they cannot be re-analyzed.
+
+**Proposed Solution**: Dynamic, multi-round investigation with Orchestrator as decision-maker.
+
+*   **Orchestrator-Driven Routing**:
+    *   After each specialist agent completes work, Orchestrator analyzes the `InvestigationGraph`.
+    *   Identifies analysis gaps (e.g., unanalyzed hashes, unresolved IPs).
+    *   Routes the next high-priority IOC to the appropriate specialist.
+
+*   **Iterative Pivoting** (Max 3 Rounds):
+    1.  **Round 1**: Triage Agent → Orchestrator decides if hash needs behavioral analysis.
+    2.  **Round 2**: Malware Agent finds IPs → Orchestrator routes IPs to Infrastructure Agent.
+    3.  **Round 3**: Infrastructure Agent finds new hash → Orchestrator routes to Malware Agent.
+    *   If max rounds reached with remaining gaps, system recommends "Continue Investigation".
+
+*   **InvestigationGraph Enhancements**:
+    *   New methods: `find_unanalyzed_nodes()`, `get_analysis_gaps()`, `mark_node_analyzed()`.
+    *   Orchestrator queries graph to drive decisions (e.g., "Which nodes lack behavioral analysis?").
+
+*   **Implementation Approach**:
+    *   **Option A**: CrewAI `Process.hierarchical` with Orchestrator as manager agent.
+    *   **Option B**: Custom loop outside CrewAI with explicit round tracking (recommended for MVP).
+
+*   **Stopping Conditions**:
+    *   Round limit reached (3 rounds).
+    *   No new IOCs discovered in last round.
+    *   All nodes in graph analyzed.
+
+**Detailed Design**: See [V3 Iterative Workflow Design Document](./V3_Iterative_Workflow_Design.md) for architecture diagrams, manager prompts, and migration path.
+
+### Version 4: The Knowledge Graph (Graph-RAG)
 **Objective**: Transform isolated investigation data into a persistent, queryable knowledge base that enables historical correlation and "reuse" of intelligence.
 
 *   **Graph Database Integration**:
