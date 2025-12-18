@@ -212,6 +212,52 @@ def view_debug_logs(session_dir: str = None):
         print(f"  python ai_threathunter.py debug-logs --session <session_name>")
 
 
+
+def run_v2_verification():
+    """Verify integration of V2 foundation components"""
+    try:
+        from .core.models import IOCType, IOCAnalysisResult
+        from .core.investigation_graph import InvestigationGraph, InvestigationNode
+        from .tools.gti_tool import GTITool
+        from .utils.report_formatter import ReportFormatter
+        
+        print("🧪 Verifying V2 Components...")
+        
+        # 1. Test Graph
+        print("   Testing InvestigationGraph...")
+        graph = InvestigationGraph()
+        node = InvestigationNode(id="verify.test", type=IOCType.DOMAIN)
+        graph.add_node(node)
+        if graph.get_node("verify.test") is None:
+            raise Exception("Graph failed to store node")
+        print("   ✅ Graph Initialized and Node Added")
+        
+        # 2. Test Tool
+        print("   Testing GTITool Structure...")
+        tool = GTITool(api_key="mock_key")
+        print("   ✅ GTITool Initialized")
+        
+        # 3. Test Formatter
+        print("   Testing ReportFormatter...")
+        mock_result = IOCAnalysisResult(
+            ioc="verify.test",
+            ioc_type=IOCType.DOMAIN,
+            verdict="BENIGN",
+            total_votes=50
+        )
+        report = ReportFormatter.format_triage_report(mock_result)
+        if "IOC Threat Assessment" not in report:
+            raise Exception("Report format mismatch")
+        print("   ✅ ReportFormatter generated markdown")
+        
+        print("🎉 All V2 Foundation Components Verified!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Verification failed: {e}")
+        return False
+
+
 def main():
     """Main entry point with command line argument parsing"""
     parser = argparse.ArgumentParser(
@@ -238,6 +284,9 @@ def main():
     debug_parser = subparsers.add_parser('debug-logs', help='View debug logs from previous investigations')
     debug_parser.add_argument('--session', help='Specific session directory to view')
     
+    # Verification command
+    subparsers.add_parser('verify-v2', help='Verify V2 foundation components')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -253,6 +302,9 @@ def main():
             
         elif args.command == 'debug-logs':
             view_debug_logs(args.session)
+            
+        elif args.command == 'verify-v2':
+            run_v2_verification()
             
     except Exception as e:
         print(f"💥 Command failed: {e}")
