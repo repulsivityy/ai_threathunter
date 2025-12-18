@@ -23,17 +23,24 @@ The agents use tools to interact with threat intelligence sources like Google Th
 - **Configurable Workflow**: Agent roles and tasks are defined in YAML files for easy customization.
 - **Selectable Backends**: Can be configured to use direct API calls or a more advanced MCP (Mission Control Platform) server.
 
-## Planned Workflow
+## Planned Workflow & Roadmap
 
-The current workflow is **sequential**:
+The project is evolving from a sequential analysis tool to a dynamic, graph-based threat intelligence platform.
+
+**Future Versions at a Glance:**
+*   **Version 2**: Introduces an **Orchestrator Agent** for dynamic task management and integrates additional tools like **URLScan.io** and **Shodan**.
+*   **Version 3**: Implements a **Graph Database** (Graph-RAG) to persist data and map relationships across different investigations, enabling historical correlation.
+*   **Final Version**: A scalable, cloud-native application on **Google Cloud Platform (GCP)** with a fully interactive web frontend.
+
+For full details on the vision, requirements, and technical roadmap, please refer to the [Product Requirements Document (PRD)](docs/PRD.md).
+
+### Current Logical Workflow (Version 1)
 ```mermaid
 graph TD
     A[🔍 IOC Input] --> B(Triage Specialist);
     B --> C(Malware Analysis Agent);
     C --> D(Infrastructure Analysis Agent);
 ```
-
-A dynamic, orchestrated workflow is planned for a future release.
 
 ## Installation
 
@@ -98,30 +105,4 @@ ai_threathunter/
 ├── ai_threathunter.py        # Main entry point for the application
 ├── run_debug.py              # Runner script for debug mode
 └── requirements.txt          # Python dependencies
-```
-
-## Roadmap
-
-### Agents
-- [x] Infra Analysis Agent - Investigates network indicators
-- [ ] Threat Hunter Agent - Correlates and provide hunt hypothesis for continued hunts
-- [ ] Orchestrator Agent - Acts as the correlation from all the output and provides the final verdict
-
-### Tools
-- [x] MCP servers for agents to use 
-- [ ] Shodan for Infra Hunter Agent
-- [ ] URLScan for Infra Hunter Agent
-- [ ] Ghidra (or similar) for Malware analysis agent
-
-### Final Workflow
-```mermaid
-graph TD
-    A[🔍 IOC Input] --> B{Triage Specialist};
-    B -- File IOC --> C[Malware Analysis Agent];
-    B -- Network IOC --> D[Infrastructure Analysis Agent];
-    C -- updates --> E[Orchestrator Agent]
-    D -- updates --> E
-    E -- Suspicious Network IOCs found --> D
-    E -- Suspicious Files Found --> C
-    E -- Informs --> F[Threat Hunter Agent]
 ```
