@@ -33,7 +33,10 @@ class CacheManager:
             return None
 
     def set(self, key: str, data: Any):
-        """Save data to cache"""
+        """Save data to cache with automatic cleanup"""
+        # Cleanup expired entries before writing
+        self._cleanup_expired()
+        
         cache_file = self.cache_dir / f"{self._get_cache_key(key)}.json"
         
         try:
@@ -44,6 +47,21 @@ class CacheManager:
                 }, f)
         except Exception as e:
             print(f"Warning: Failed to write to cache: {e}")
+    
+    def _cleanup_expired(self):
+        """Remove expired cache files"""
+        for cache_file in self.cache_dir.glob("*.json"):
+            try:
+                with open(cache_file, 'r') as f:
+                    cached_data = json.load(f)
+                
+                # Check if expired
+                if time.time() - cached_data['timestamp'] > self.ttl_seconds:
+                    cache_file.unlink()
+            except Exception:
+                # If we can't read the file, skip it
+                pass
+
 
     def clear(self):
         """Clear all cache"""

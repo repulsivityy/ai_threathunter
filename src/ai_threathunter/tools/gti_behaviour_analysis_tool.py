@@ -29,22 +29,38 @@ class GTIBehaviourAnalysisTool(BaseTool):
     )
     args_schema: Type[BaseModel] = GTIBehaviourAnalysisInput
     api_key: str = Field(default="", exclude=True)
-    _cache: Any = PrivateAttr()
+    _cache: 'CacheManager' = PrivateAttr()
+    _investigation_graph: Any = PrivateAttr(default=None)
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, investigation_graph = None):
         super().__init__()
         self.api_key = api_key or os.getenv('GTI_API_KEY') or os.getenv('VIRUSTOTAL_API_KEY')
+        self._investigation_graph = investigation_graph
         if not self.api_key:
             raise ValueError("GTI API key not found. Please set GTI_API_KEY or VIRUSTOTAL_API_KEY environment variable.")
             
         from ..utils.cache_manager import CacheManager
         self._cache = CacheManager()
 
+    def _save_to_graph(self, result: BehavioralSummary):
+        """Helper to save behavior to graph if available"""
+        if self._investigation_graph:
+            try:
+                self._investigation_graph.add_behavior_summary(result)
+            except Exception as e:
+                print(f"    ⚠️ Failed to save behavior to investigation graph: {e}")
+
     def _run(self, hash: str) -> BehavioralSummary:
         """Execute the deep analysis."""
         try:
             print(f"🔍 GTI Deep Analysis: {hash}")
-            return self._get_hash_behavior_summary(hash)
+            result = self._get_hash_behavior_summary(hash)
+            
+            # Save to graph
+            if result:
+                self._save_to_graph(result)
+                
+            return result
         except Exception as error:
              print(f"❌ GTI deep analysis failed for {hash}: {str(error)}")
              return BehavioralSummary(hash=hash)

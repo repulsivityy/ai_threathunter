@@ -81,6 +81,24 @@ python3 ai_threathunter.py investigate {IOC}
 python3 ai_threathunter.py investigate celebratioopz.shop
 ```
 
+## Configuration Notes
+
+### API Rate Limiting
+
+The GTI tools include a **commented-out rate limiter** implementation. This is currently disabled because:
+- Our GTI Enterprise license includes very high API rate limits
+- Rate limiting would unnecessarily slow down investigations
+
+**However, the code is preserved** in `src/ai_threathunter/tools/gti_tool.py` for:
+1. Future license changes that may have stricter quotas
+2. Reuse in other tools with API rate restrictions
+
+**To enable rate limiting:**
+1. Uncomment the `RateLimiter` class definition (lines ~25-50)
+2. Uncomment the initialization in `GTITool.__init__()` 
+3. Uncomment the `wait_if_needed()` call in `_make_request()`
+4. Adjust `calls_per_minute` parameter as needed
+
 ### Enable Debug Mode
 
 For more verbose output and to save detailed logs of all API calls, update the DEBUG_API_CALLS environment variable to TRUE:

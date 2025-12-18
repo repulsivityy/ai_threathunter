@@ -8,12 +8,16 @@ import os
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
-from typing import List
+from typing import List, Any
+from .core.investigation_graph import InvestigationGraph
 
 
 @CrewBase
 class ThreatHuntingCrew():
     """Smart Threat Hunting Crew with ReAct-based intelligent agents"""
+    
+    agents_config = os.path.join(os.path.dirname(__file__), 'config', 'agents.yaml')
+    tasks_config = os.path.join(os.path.dirname(__file__), 'config', 'tasks.yaml')
 
     agents: List[BaseAgent]
     tasks: List[Task]
@@ -22,8 +26,11 @@ class ThreatHuntingCrew():
         super().__init__()
         
         # Triage agent always uses the direct API
+        from .core.investigation_graph import InvestigationGraph
+        self.investigation_graph = InvestigationGraph()
+        
         from .tools.gti_tool import GTITool
-        self.gti_tool = GTITool()
+        self.gti_tool = GTITool(investigation_graph=self.investigation_graph)
 
         # Check if MCP mode is enabled
         use_mcp = os.getenv('USE_GTI_MCP', 'false').lower() == 'true'
@@ -32,20 +39,20 @@ class ThreatHuntingCrew():
             print("🔌 Malware and Infrastructure agents using GTI MCP Server")
             try:
                 from .tools.gti_mcp_tool import GTIMCPTool
-                self.gti_behaviour_analysis_tool = GTIMCPTool()
-                self.gti_infrastructure_tool = GTIMCPTool()
+                self.gti_behaviour_analysis_tool = GTIMCPTool(investigation_graph=self.investigation_graph)
+                self.gti_infrastructure_tool = GTIMCPTool(investigation_graph=self.investigation_graph)
             except (ImportError, ValueError) as e:
                 print(f"❌ Failed to import or configure MCP tools: {e}")
                 print("📡 Falling back to Direct GTI API for malware and infrastructure analysis")
                 from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
-                self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool()
+                self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool(investigation_graph=self.investigation_graph)
                 from .tools.gti_ip_address_tool import GTIIpAddressTool
                 from .tools.gti_domain_tool import GTIDomainTool
                 self.gti_infrastructure_tool = [GTIIpAddressTool(), GTIDomainTool()]
         else:
             print("📡 Malware and Infrastructure agents using Direct GTI API")
             from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
-            self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool()
+            self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool(investigation_graph=self.investigation_graph)
             from .tools.gti_ip_address_tool import GTIIpAddressTool
             from .tools.gti_domain_tool import GTIDomainTool
             self.gti_infrastructure_tool = [GTIIpAddressTool(), GTIDomainTool()]
@@ -83,12 +90,14 @@ class ThreatHuntingCrew():
     #         config=self.agents_config['campaign_intelligence_analyst']
     #     )
 
-    # @agent
-    # def correlation_orchestrator(self) -> Agent:
-    #     """Cross-Agent Intelligence Correlation and Investigation Orchestrator"""
-    #     return Agent(
-    #         config=self.agents_config['intelligence_correlation_orchestrator']
-    #     )
+    @agent
+    def correlation_orchestrator(self) -> Agent:
+        """Cross-Agent Intelligence Correlation and Investigation Orchestrator"""
+        from .tools.graph_inspection_tool import GraphInspectionTool
+        return Agent(
+            config=self.agents_config['intelligence_correlation_orchestrator'],
+            tools=[GraphInspectionTool(investigation_graph=self.investigation_graph)]
+        )
 
     @task
     def initial_assessment(self) -> Task:
@@ -130,16 +139,16 @@ class ThreatHuntingCrew():
     #         output_file='reports/campaign_intelligence.md'
     #     )
 
-    # @task
-    # def intelligence_orchestration(self) -> Task:
-    #     """Continuous intelligence correlation and orchestration"""
-    #     return Task(
-    #         config=self.tasks_config['continuous_intelligence_correlation'],
-    #         agent=self.correlation_orchestrator(),
-    #         context=[self.initial_assessment(), self.malware_analysis(), 
-    #                 self.infrastructure_correlation(), self.campaign_synthesis()],
-    #         output_file='reports/final_intelligence_report.md'
-    #     )
+    @task
+    def intelligence_orchestration(self) -> Task:
+        """Continuous intelligence correlation and orchestration"""
+        return Task(
+            config=self.tasks_config['intelligence_orchestration'],
+            agent=self.correlation_orchestrator(),
+            context=[self.initial_assessment(), self.malware_analysis(), 
+                    self.infrastructure_correlation()],
+            output_file='reports/final_intelligence_report.md'
+        )
 
     @crew
     def crew(self) -> Crew:
@@ -169,12 +178,38 @@ class ThreatHuntingCrew():
         
         print(f"✅ Investigation completed for IOC: {ioc}")
         
-        return {
-            'status': 'completed',
-            'ioc': ioc,
-            'result': result,
-            'final_report': result.raw if hasattr(result, 'raw') else str(result)
-        }
+        # [NEW] Append Graph to Report
+        try:
+            mermaid_graph = self.investigation_graph.to_mermaid()
+            report_path = 'reports/final_intelligence_report.md'
+            
+            with open(report_path, 'a') as f:
+                f.write("\n\n## Investigation Graph Visualization\n")
+                f.write("```mermaid\n")
+                f.write(mermaid_graph)
+                f.write("\n```\n")
+            print(f"📊 Graph visualization appended to {report_path}")
+            
+            # Update result object if it's string (CrewAI v0.1 vs newer)
+            final_report_content = ""
+            if os.path.exists(report_path):
+                with open(report_path, 'r') as f:
+                    final_report_content = f.read()
+            
+            return {
+                'status': 'completed',
+                'ioc': ioc,
+                'result': result,
+                'final_report': final_report_content
+            }
+        except Exception as e:
+            print(f"⚠️ Failed to append graph to report: {e}")
+            return {
+                'status': 'completed',
+                'ioc': ioc,
+                'result': result,
+                'final_report': str(result)
+            }
 
 
 def main():

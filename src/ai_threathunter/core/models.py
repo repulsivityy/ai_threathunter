@@ -36,10 +36,14 @@ class IOCAnalysisResult(BaseModel):
     # Context
     first_seen: Optional[datetime] = None
     last_seen: Optional[datetime] = None
+    timestamp: Optional[float] = None
     
     # Enrichment
     tags: List[str] = []
     attributions: List[Attribution] = []
+    
+    # Relationships (for graph edges)
+    related_iocs: List[Dict[str, str]] = []  # [{'type': 'ip', 'value': '1.2.3.4', 'relationship': 'RESOLVES_TO'}]
     
     # Raw data for fallback
     raw_data: Optional[Dict[str, Any]] = Field(default=None, exclude=True)
