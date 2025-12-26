@@ -5,9 +5,11 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 class CacheManager:
-    def __init__(self, cache_dir: str = ".cache", ttl_seconds: int = 86400):
+    def __init__(self, cache_dir: str = ".cache", ttl_seconds: int = 86400, cleanup_interval: int = 50):
         self.cache_dir = Path(cache_dir)
         self.ttl_seconds = ttl_seconds
+        self.cleanup_interval = cleanup_interval
+        self._write_count = 0
         self.cache_dir.mkdir(exist_ok=True)
 
     def _get_cache_key(self, key: str) -> str:
@@ -34,8 +36,11 @@ class CacheManager:
 
     def set(self, key: str, data: Any):
         """Save data to cache with automatic cleanup"""
-        # Cleanup expired entries before writing
-        self._cleanup_expired()
+        # Optimized: Only cleanup every N writes to reduce I/O
+        self._write_count += 1
+        if self._write_count >= self.cleanup_interval:
+            self._cleanup_expired()
+            self._write_count = 0
         
         cache_file = self.cache_dir / f"{self._get_cache_key(key)}.json"
         

@@ -288,6 +288,8 @@ class GTIMCPTool(BaseTool):
                 if self._investigation_graph:
                     try:
                          self._investigation_graph.add_analysis_result(result)
+                         # Mark node as analyzed
+                         self._investigation_graph.mark_node_analyzed(ioc)
                     except Exception as e:
                          print(f"    ⚠️ Failed to save to investigation graph: {e}")
                 
@@ -301,6 +303,8 @@ class GTIMCPTool(BaseTool):
                 if self._investigation_graph:
                     try:
                          self._investigation_graph.add_behavior_summary(result)
+                         # Mark hash as analyzed
+                         self._investigation_graph.mark_node_analyzed(ioc)
                     except Exception as e:
                          print(f"    ⚠️ Failed to save to investigation graph: {e}")
                 

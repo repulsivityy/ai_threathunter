@@ -48,14 +48,14 @@ class ThreatHuntingCrew():
                 self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool(investigation_graph=self.investigation_graph)
                 from .tools.gti_ip_address_tool import GTIIpAddressTool
                 from .tools.gti_domain_tool import GTIDomainTool
-                self.gti_infrastructure_tool = [GTIIpAddressTool(), GTIDomainTool()]
+                self.gti_infrastructure_tool = [GTIIpAddressTool(investigation_graph=self.investigation_graph), GTIDomainTool(investigation_graph=self.investigation_graph)]
         else:
             print("📡 Malware and Infrastructure agents using Direct GTI API")
             from .tools.gti_behaviour_analysis_tool import GTIBehaviourAnalysisTool
             self.gti_behaviour_analysis_tool = GTIBehaviourAnalysisTool(investigation_graph=self.investigation_graph)
             from .tools.gti_ip_address_tool import GTIIpAddressTool
             from .tools.gti_domain_tool import GTIDomainTool
-            self.gti_infrastructure_tool = [GTIIpAddressTool(), GTIDomainTool()]
+            self.gti_infrastructure_tool = [GTIIpAddressTool(investigation_graph=self.investigation_graph), GTIDomainTool(investigation_graph=self.investigation_graph)]
 
 
     @agent
@@ -63,7 +63,8 @@ class ThreatHuntingCrew():
         """Senior IOC Triage and Assessment Expert"""
         return Agent(
             config=self.agents_config['triage_specialist'],
-            tools=[self.gti_tool]
+            tools=[self.gti_tool],
+            allow_delegation=False
         )
 
     @agent 
@@ -71,7 +72,8 @@ class ThreatHuntingCrew():
         """Elite Malware Behavioral Analysis Expert"""
         return Agent(
             config=self.agents_config['malware_analysis_specialist'],
-            tools=[self.gti_behaviour_analysis_tool]
+            tools=[self.gti_behaviour_analysis_tool],
+            allow_delegation=False
         )
 
     @agent
@@ -80,73 +82,47 @@ class ThreatHuntingCrew():
         tools = self.gti_infrastructure_tool if isinstance(self.gti_infrastructure_tool, list) else [self.gti_infrastructure_tool]
         return Agent(
             config=self.agents_config['infrastructure_analysis_specialist'],
-            tools=tools
+            tools=tools,
+            allow_delegation=False
         )
-
-    # @agent
-    # def campaign_analyst(self) -> Agent:
-    #     """Strategic Threat Campaign Assessment and Attribution Expert"""
-    #     return Agent(
-    #         config=self.agents_config['campaign_intelligence_analyst']
-    #     )
 
     @agent
-    def correlation_orchestrator(self) -> Agent:
-        """Cross-Agent Intelligence Correlation and Investigation Orchestrator"""
+    def lead_threat_hunter(self) -> Agent:
+        """Lead Threat Hunter (Tier 3 Context Manager)"""
         from .tools.graph_inspection_tool import GraphInspectionTool
+        # Granting access to ALL tools for deep verification and correlation
+        all_tools = [
+            GraphInspectionTool(investigation_graph=self.investigation_graph),
+            self.gti_tool,
+            self.gti_behaviour_analysis_tool
+        ]
+        
+        # Flatten capability tools
+        infra_tools = self.gti_infrastructure_tool if isinstance(self.gti_infrastructure_tool, list) else [self.gti_infrastructure_tool]
+        all_tools.extend(infra_tools)
+
         return Agent(
-            config=self.agents_config['intelligence_correlation_orchestrator'],
-            tools=[GraphInspectionTool(investigation_graph=self.investigation_graph)]
+            config=self.agents_config['lead_threat_hunter'],
+            tools=all_tools,
+            allow_delegation=False
+        )
+
+    @agent
+    def orchestrator_manager(self) -> Agent:
+        """Investigation Coordinator and Manager"""
+        return Agent(
+            config=self.agents_config['orchestrator_manager'],
+            tools=[], # Manager relies on delegation and does not use tools directly
+            allow_delegation=True,
+            verbose=True
         )
 
     @task
-    def initial_assessment(self) -> Task:
-        """Initial IOC triage and priority assessment"""
+    def iterative_investigation(self) -> Task:
+        """High-level investigation task managed by orchestrator"""
         return Task(
-            config=self.tasks_config['initial_ioc_assessment'],
-            agent=self.triage_specialist(),
-            output_file='reports/triage_assessment.md'
-        )
-
-    @task
-    def malware_analysis(self) -> Task:
-        """Deep malware behavioral analysis"""
-        return Task(
-            config=self.tasks_config['deep_malware_behavioral_analysis'],
-            agent=self.malware_specialist(),
-            context=[self.initial_assessment()],  # CrewAI handles context automatically
-            output_file='reports/malware_analysis.md'
-        )
-
-    @task 
-    def infrastructure_correlation(self) -> Task:
-        """Infrastructure campaign correlation and mapping"""
-        return Task(
-            config=self.tasks_config['infrastructure_campaign_correlation'],
-            agent=self.infrastructure_hunter(),
-            context=[self.initial_assessment(), self.malware_analysis()],  # Full context
-            output_file='reports/infrastructure_analysis.md'
-        )
-
-    
-    # @task
-    # def campaign_synthesis(self) -> Task:
-    #     """Strategic campaign intelligence synthesis"""
-    #     return Task(
-    #         config=self.tasks_config['strategic_campaign_intelligence_synthesis'],
-    #         agent=self.campaign_analyst(),
-    #         context=[self.initial_assessment(), self.malware_analysis(), self.infrastructure_correlation()],  # Include orchestrator context
-    #         output_file='reports/campaign_intelligence.md'
-    #     )
-
-    @task
-    def intelligence_orchestration(self) -> Task:
-        """Continuous intelligence correlation and orchestration"""
-        return Task(
-            config=self.tasks_config['intelligence_orchestration'],
-            agent=self.correlation_orchestrator(),
-            context=[self.initial_assessment(), self.malware_analysis(), 
-                    self.infrastructure_correlation()],
+            config=self.tasks_config['iterative_investigation'],
+            agent=self.orchestrator_manager(),
             output_file='reports/final_intelligence_report.md'
         )
 
@@ -154,9 +130,15 @@ class ThreatHuntingCrew():
     def crew(self) -> Crew:
         """Creates the Smart Threat Hunting crew"""
         return Crew(
-            agents=self.agents,  # Automatically populated by @agent decorators
-            tasks=self.tasks,    # Automatically populated by @task decorators
-            process=Process.sequential,  # Sequential with automatic context passing
+            agents=[
+                self.orchestrator_manager(), # Manager is now a first-class citizen
+                self.lead_threat_hunter(),
+                self.triage_specialist(),
+                self.malware_specialist(),
+                self.infrastructure_hunter()
+            ],
+            tasks=[self.iterative_investigation()],
+            process=Process.sequential, # Use sequential to allow Manager to execute its task and delegate
             verbose=True,
             memory=False
         )

@@ -60,6 +60,13 @@ class GTIBehaviourAnalysisTool(BaseTool):
             if result:
                 self._save_to_graph(result)
                 
+                # Mark the hash as analyzed to prevent re-analysis
+                if self._investigation_graph:
+                    try:
+                        self._investigation_graph.mark_node_analyzed(hash)
+                    except Exception as e:
+                        print(f"    ⚠️ Failed to mark node as analyzed: {e}")
+                
             return result
         except Exception as error:
              print(f"❌ GTI deep analysis failed for {hash}: {str(error)}")

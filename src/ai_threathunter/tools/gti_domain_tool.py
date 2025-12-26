@@ -1,6 +1,6 @@
 from crewai.tools import BaseTool
 from typing import Type, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 import requests
 import os
 import time
@@ -17,10 +17,12 @@ class GTIDomainTool(BaseTool):
     )
     args_schema: Type[BaseModel] = GTIDomainToolInput
     api_key: str = Field(default="", exclude=True)
+    _investigation_graph: Any = PrivateAttr(default=None)
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, investigation_graph = None):
         super().__init__()
         self.api_key = api_key or os.getenv('GTI_API_KEY') or os.getenv('VIRUSTOTAL_API_KEY')
+        self._investigation_graph = investigation_graph
         if not self.api_key:
             raise ValueError("GTI API key not found. Please set GTI_API_KEY or VIRUSTOTAL_API_KEY environment variable.")
 
@@ -29,7 +31,16 @@ class GTIDomainTool(BaseTool):
         try:
             print(f"🔍 GTI Domain Analysis: {domain}, Relationship: {relationship}")
             if relationship == "report":
-                return self._get_domain_report(domain)
+                result = self._get_domain_report(domain)
+                
+                # Mark domain as analyzed after report is complete
+                if self._investigation_graph and relationship == "report":
+                    try:
+                        self._investigation_graph.mark_node_analyzed(domain)
+                    except Exception as e:
+                        print(f"    ⚠️ Failed to mark domain as analyzed: {e}")
+                
+                return result
             else:
                 return self._get_domain_relationship(domain, relationship)
         except Exception as error:

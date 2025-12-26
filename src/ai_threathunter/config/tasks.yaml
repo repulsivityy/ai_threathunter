@@ -222,45 +222,48 @@ infrastructure_campaign_correlation:
 #     Dynamic Collaboration:
 
 
-intelligence_orchestration:
+iterative_investigation:
   description: >
-    Inspect the Investigation Graph using the `GraphInspectionTool` to monitor investigation progress, identify 
-    intelligence gaps, and orchestrate dynamic agent collaboration.
+    Coordinate a thorough, iterative investigation of the IOC: {ioc}
     
-    Your goal is to synthesize the final intelligence report by reading the graph state.
+    **Your Role as Investigation Manager**:
+    You coordinate a team of specialist agents to investigate threats.
     
-    **Instructions:**
-    1.  **Inspect the Graph:** Use `GraphInspectionTool` with `query_type='summary'` and `query_type='full_context'` to see all findings.
-    2.  **Identify Gaps:** Look for nodes that are isolated or have missing context (e.g., C2 domains with no resolved IPs, or Malware with no behaviors).
-    3.  **Synthesize Findings:** Correlate the Triage, Malware, and Infrastructure findings into a cohesive narrative.
+    **Specialists Available to Delegate To**:
+    - **Lead Threat Hunter**: Context manager who can check the Investigation Graph for analysis gaps and synthesize findings
+    - **Triage Specialist**: Initial assessment of any IOC type
+    - **Malware Analysis Specialist**: Behavioral analysis of file hashes
+    - **Infrastructure Specialist**: Network IOC correlation and pivoting
     
-    Orchestration Focus:
-    - Continuously assess investigation completeness and identify areas requiring additional analysis.
-    - Recognize when findings from one agent create new context that should enhance previous agent analysis.
-    - Intelligently determine when to recall agents with enhanced context and specific focus areas.
-    - Ensure optimal utilization of specialist expertise and prevent intelligence gaps.
+    **Your Investigation Process**:
     
-    Analytical Reasoning:
-    Think like a senior investigation manager who understands. When infrastructure analysis reveals patterns that don't match initial malware assessment, consider whether the 
-    malware specialist should re-examine findings with new context. When campaign analysis identifies attribution 
-    indicators, assess whether additional infrastructure correlation could strengthen confidence.
+    1. **Round 1 - Initial Assessment**:
+       - Delegate the initial IOC to the Triage Specialist
+       - Wait for their report
     
-    Dynamic Collaboration:
-    Make intelligent decisions about agent recall based on investigation needs, not predetermined workflows. If you 
-    identify intelligence gaps that would benefit from specialist re-analysis with enhanced context, orchestrate 
-    that collaboration. Continue until you're confident that all significant intelligence has been extracted.
-
-    Important: 
-    Do not hallucinate - only report the facts as what you see from the tools.
-
-    - Security Recommendations:
-      - Immediate containment steps
-      - Investigation priorities
+    2. **Round 2 - Deep Dive (Loop)**:
+       - **CRITICAL**: Delegate to **Lead Threat Hunter** to "Check the Investigation Graph for analysis gaps".
+       - Based on the Lead Hunter's report:
+         - If unanalyzed hashes exist -> Delegate to Malware Specialist
+         - If unanalyzed IPs/domains exist -> Delegate to Infrastructure Specialist
+       - Repeat this check loop
+    
+    3. **Round 3 - Final Pivots**:
+       - Ask Lead Threat Hunter for final graph status
+       - Delegate ONE more critical analysis
+    
+    4. **Synthesis**:
+       - Ask Lead Threat Hunter for "Full Graph Context and Final Report"
+       - If gaps remain, explicitly state: "RECOMMEND: Continue Investigation"
+       - List unanalyzed IOCs as follow-up actions
+    
+    **Critical Rules**:
+    - **Budget**: You have a budget of **3 calls PER SPECIALIST type**. (e.g., You can call Malware Agent 3 separate times if new hashes are found).
+    - **Graph Check**: You cannot look at the graph. Delegate "Check Graph" to the Lead Threat Hunter.
+    - **Global Limit**: Stop if you have made 10 total delegations to prevent infinite loops.
+    - **Prioritization**: Focus on high-value IOCs (hashes with malicious votes, C2 IPs) first.
+    - **Update**: Update the Investigation Graph after each specialist reports back.
     
   expected_output: >
-    Investigation orchestration assessment including:
-    - Intelligence gap analysis with specific areas requiring additional investigation, based on the evidence.
-    - Agent recall recommendations with enhanced context and specific focus areas, based on the evidence.
-    - Investigation completeness assessment with confidence in finding thoroughness, based on the evidence.
-    - Dynamic collaboration plan for optimal intelligence extraction, based on the evidence.
-    - Final investigation quality assessment and recommendation for conclusion or continuation, based on the evidence.
+    Comprehensive investigation report with all findings, graph visualization, and actionable recommendations.
+    The report must clearly state if the investigation is COMPLETE or if specific specialist budgets were exhausted.

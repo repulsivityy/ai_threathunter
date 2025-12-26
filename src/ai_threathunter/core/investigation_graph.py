@@ -63,8 +63,10 @@ class InvestigationGraph:
 
     def add_node(self, node: InvestigationNode):
         """Add a node to the graph"""
-        if not self.root_ioc:
+        # Set root_ioc if this is the first node
+        if self.graph.number_of_nodes() == 0 and not self.root_ioc:
             self.root_ioc = node.id
+            print(f"    🎯 Graph Root Set: {self.root_ioc}")
             
         self.graph.add_node(node.id, 
                            type=node.type, 
@@ -143,13 +145,42 @@ class InvestigationGraph:
         return []
 
     def get_summary(self) -> Dict[str, Any]:
-        """Return a statistical summary of the graph"""
+        """Enhanced summary with analysis status"""
         return {
             "root_ioc": self.root_ioc,
-            "total_nodes": self.graph.number_of_nodes(),
-            "total_edges": self.graph.number_of_edges(),
-            "nodes_by_type": self._count_nodes_by_type()
+            'total_nodes': self.graph.number_of_nodes(),
+            'total_edges': self.graph.number_of_edges(),
+            'nodes_by_type': self._count_nodes_by_type(),
+            'unanalyzed_hashes': self._find_unanalyzed_nodes(IOCType.FILE),
+            'unanalyzed_ips': self._find_unanalyzed_nodes(IOCType.IP),
+            'unanalyzed_domains': self._find_unanalyzed_nodes(IOCType.DOMAIN)
         }
+
+    def _find_unanalyzed_nodes(self, ioc_type: IOCType) -> List[str]:
+        """Find nodes of given type without analysis data"""
+        unanalyzed = []
+        for node_id, attrs in self.graph.nodes(data=True):
+            if attrs.get('type') == ioc_type:
+                # Check if node has been marked as analyzed
+                # We use a flag 'analysis_complete' or specific analysis type flags if needed
+                # For simplicity, we check a generic 'analysis_complete' flag or specific type flags
+                # The Orchestrator will look for these specific keys
+                
+                is_analyzed = attrs.get('analysis_complete', False)
+                
+                # Also consider if it has deep data (behavior for files)
+                if ioc_type == IOCType.FILE and attrs.get('behavior'):
+                     is_analyzed = True
+                     
+                if not is_analyzed:
+                    unanalyzed.append(node_id)
+        return unanalyzed
+    
+    def mark_node_analyzed(self, node_id: str):
+        """Mark a node as analyzed to prevent re-analysis"""
+        if self.graph.has_node(node_id):
+            self.graph.nodes[node_id]['analysis_complete'] = True
+            print(f"    ✅ Graph Update: Marked {node_id} as analyzed")
 
     def _count_nodes_by_type(self) -> Dict[str, int]:
         counts = {}

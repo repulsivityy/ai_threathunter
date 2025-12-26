@@ -29,7 +29,19 @@ class GraphInspectionTool(BaseTool):
                 return {"error": "Graph not initialized"}
 
             if query_type == "summary":
-                return self._investigation_graph.get_summary()
+                summary = self._investigation_graph.get_summary()
+                
+                # Add human-readable analysis gaps for the Orchestrator
+                gaps = []
+                if summary.get('unanalyzed_hashes'):
+                    gaps.append(f"{len(summary['unanalyzed_hashes'])} hashes need behavioral analysis: {', '.join(summary['unanalyzed_hashes'][:3])}...")
+                if summary.get('unanalyzed_ips'):
+                    gaps.append(f"{len(summary['unanalyzed_ips'])} IPs need infrastructure analysis: {', '.join(summary['unanalyzed_ips'][:3])}...")
+                if summary.get('unanalyzed_domains'):
+                    gaps.append(f"{len(summary['unanalyzed_domains'])} Domains need infrastructure analysis: {', '.join(summary['unanalyzed_domains'][:3])}...")
+                
+                summary['analysis_gaps'] = gaps
+                return summary
             
             elif query_type == "node_details":
                 if not ioc:

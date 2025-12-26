@@ -99,19 +99,28 @@ class GTITool(BaseTool):
         try:
             print(f"🔍 GTI Analysis: {ioc} ({ioc_type})")
             
+            result = None
             if ioc_type == 'hash':
-                return self._analyze_hash(ioc)
+                result = self._analyze_hash(ioc)
             elif ioc_type == 'ip':
-                return self._analyze_ip(ioc)
+                result = self._analyze_ip(ioc)
             elif ioc_type == 'domain':
-                return self._analyze_domain(ioc)
+                result = self._analyze_domain(ioc)
             elif ioc_type == 'url':
-                return self._analyze_url(ioc)
+                result = self._analyze_url(ioc)
+            else:
                 raise ValueError(f"Unsupported IOC type: {ioc_type}")
             
             # Save to graph
             if result:
                 self._save_to_graph(result)
+                
+                # Mark node as analyzed
+                if self._investigation_graph:
+                    try:
+                        self._investigation_graph.mark_node_analyzed(ioc)
+                    except Exception as e:
+                        print(f"    ⚠️ Failed to mark node as analyzed: {e}")
 
             return result
                 
