@@ -121,7 +121,7 @@ class ThreatHuntingCrew():
     def iterative_investigation(self) -> Task:
         """High-level investigation task managed by orchestrator"""
         return Task(
-            config=self.tasks_config['iterative_investigation'],
+            config=self.tasks_config['manager_investigation_task'],
             agent=self.orchestrator_manager(),
             output_file='reports/final_intelligence_report.md'
         )
@@ -155,6 +155,9 @@ class ThreatHuntingCrew():
         """
         print(f"🔍 Starting investigation for IOC: {ioc}")
         
+        # Set the root IOC for this investigation
+        self.investigation_graph.set_root_ioc(ioc)
+        
         # CrewAI handles everything automatically!
         result = self.crew().kickoff(inputs={'ioc': ioc})
         
@@ -180,10 +183,17 @@ class ThreatHuntingCrew():
 
 
 
-def main():
+def main(ioc: str = None):
     """Example usage"""
     # Initialize crew
     threat_crew = ThreatHuntingCrew()
+    
+    # Prompt for IOC if not provided
+    if not ioc:
+        ioc = input("🔍 Enter the IOC to investigate: ").strip()
+        if not ioc:
+            print("❌ No IOC provided. Exiting.")
+            return
     
     # Investigate IOC
     results = threat_crew.investigate_ioc(ioc)

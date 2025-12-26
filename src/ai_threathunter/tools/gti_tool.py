@@ -91,8 +91,12 @@ class GTITool(BaseTool):
         if self._investigation_graph:
             try:
                 self._investigation_graph.add_analysis_result(result)
-            except Exception as e:
+            except (AttributeError, KeyError, ValueError) as e:
                 print(f"    ⚠️ Failed to save to investigation graph: {e}")
+            except Exception as e:
+                # Unexpected error - log and re-raise for debugging
+                print(f"    ❌ Unexpected error saving to graph: {e}")
+                raise
 
     def _run(self, ioc: str, ioc_type: str) -> IOCAnalysisResult:
         """Execute focused GTI analysis."""
@@ -119,7 +123,7 @@ class GTITool(BaseTool):
                 if self._investigation_graph:
                     try:
                         self._investigation_graph.mark_node_analyzed(ioc)
-                    except Exception as e:
+                    except (AttributeError, KeyError) as e:
                         print(f"    ⚠️ Failed to mark node as analyzed: {e}")
 
             return result
@@ -284,7 +288,25 @@ class GTITool(BaseTool):
         verdict = gti_assessment.get('verdict', {}).get('value', 'N/A')
         severity = gti_assessment.get('severity', {}).get('value', 'N/A')
         score = gti_assessment.get('threat_score', {}).get('value', 0)
-        description = gti_assessment.get('description')
+        # [MODIFIED] Build Rich Description with Critical Signals
+        base_desc = gti_assessment.get('description', 'No description available.')
+        
+        # Extract signals
+        gti_confidence = gti_assessment.get('contributing_factors', {}).get('gti_confidence_score', 'N/A')
+        sandbox_verdicts = attrs.get('sandbox_verdicts', {})
+        malicious_sandboxes = [name for name, v in sandbox_verdicts.items() if v.get('category') == 'malicious']
+        threat_label = attrs.get('popular_threat_classification', {}).get('suggested_threat_label', 'N/A')
+        
+        # Build description with Detection Ratio
+        description = (
+            f"{base_desc}\n\n"
+            f"--- CRITICAL SIGNALS FOR TRIAGE ---\n"
+            f"• GTI Confidence Score: {gti_confidence}/100\n"
+            f"• Detection Ratio: {malicious}/{total} (Suspicious: {suspicious})\n"
+            f"• Malicious Sandbox Executions: {', '.join(malicious_sandboxes) if malicious_sandboxes else 'None'}\n"
+            f"• Suggested Threat Label: {threat_label}\n"
+            f"-----------------------------------"
+        )
         
         # Extract Attributions
         attributions = []

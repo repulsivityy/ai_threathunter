@@ -1,4 +1,4 @@
-initial_ioc_assessment:
+triage_specialist_task:
   description: >
     You are an automated Tier 1 SOC Analyst agent. Your task is to analyze the structured threat data provided by your tools and determine the correct next step in the investigative workflow.
     
@@ -39,8 +39,10 @@ initial_ioc_assessment:
     **Verdict:** **[Verdict]**
     **Justification:** [Brief explanation based on tool findings]
     **Recommended Action:** **[Hand off to Malware Analysis / Hand off to Infrastructure Analysis / Close Alert]**
+    
+  output_file: reports/triage_assessment.md
 
-deep_malware_behavioral_analysis:
+malware_analysis_specialist_task:
   description: >
     You are an Elite Malware Behavioral Analysis Expert. Your task is to interpret the deep behavioral analysis reports to understand the malware's capabilities and intent.
     DO NOT just list the findings. You must think for yourself and hunt for the "why" and "how".
@@ -84,8 +86,10 @@ deep_malware_behavioral_analysis:
     - [List IPs/Domains found in behavioral analysis]
 
     **Verdict:** **[MALICIOUS - RANSOMWARE / SPYWARE / ETC]**
+    
+  output_file: reports/malware_analysis.md
 
-infrastructure_campaign_correlation:
+infrastructure_analysis_specialist_task:
   description: >
     You are a Master Infrastructure Hunter. Your mission is to map the adversary's infrastructure using the graph of relationships provided by your tools.
     Think like a "Hunter" - Formulate hypotheses about the infrastructure.
@@ -132,6 +136,8 @@ infrastructure_campaign_correlation:
 
     **Recommended Next Steps:**
     - **[Hand off to Strategy / Close Alert]**
+    
+  output_file: reports/infrastructure_analysis.md
 # 
 # strategic_campaign_intelligence_synthesis:
 #   description: >
@@ -221,49 +227,103 @@ infrastructure_campaign_correlation:
 #     
 #     Dynamic Collaboration:
 
+lead_threat_hunter_task:
+  description: >
+    You are the Senior Case File Analyst. Your job is to execute the specific investigation phase delegated by the Manager.
+    
+    **Common Delegated Requests**:
+    
+    1.  **"Check graph for unanalyzed nodes"**
+    *   **Goal:** meaningful prioritization of the backlog.
+    *   **Action:** Query the graph for pending nodes.
+    *   **Logic:** Apply your "Rules Engine" (Detection Ratio > 10, etc.) to rank work.
+    
+    2.  **"Verify/Deep-Dive [IOC]"**
+    *   **Goal:** Confirm maliciousness with high confidence.
+    *   **Action:** Review ALL cached evidence in the graph for this node.
+    *   **Logic:** Cross-reference Detection Ratio, Sandbox Behavior, and Infrastructure links.
+    
+    3.  **"Generate final intelligence report"**
+    *   **Goal:** Synthesize the "Case File" into a narrative.
+    *   **Action:** Walk the graph to tell the story of the attack chain.
+    
+  expected_output: >
+    **Output tailored to the specific delegation:**
+    
+    *   **If Prioritizing:** A ranked list of IOCs (CRITICAL / HIGH / MEDIUM) with justification.
+    *   **If Verifying:** A definitive "CONFIRMED MALICIOUS" or "FALSE POSITIVE" assessment with proof.
+    *   **If Reporting:** A complete Markdown report synthesizing all findings.
 
-iterative_investigation:
+
+manager_investigation_task:
   description: >
     Coordinate a thorough, iterative investigation of the IOC: {ioc}
     
     **Your Role as Investigation Manager**:
-    You coordinate a team of specialist agents to investigate threats.
+    You are the SOC Lead coordinating a team of specialist agents to investigate threats.
+    Your GOAL is to ensure ALL discovered IOCs are fully analyzed with NO gaps remaining.
     
-    **Specialists Available to Delegate To**:
-    - **Lead Threat Hunter**: Context manager who can check the Investigation Graph for analysis gaps and synthesize findings
-    - **Triage Specialist**: Initial assessment of any IOC type
-    - **Malware Analysis Specialist**: Behavioral analysis of file hashes
-    - **Infrastructure Specialist**: Network IOC correlation and pivoting
+    **Specialists Available to Delegate To (Use EXACT Role Names)**:
+    - **"Lead Threat Hunter (Tier 3 Case File Analyst & Graph Expert)"**: Checks the Investigation Graph for analysis gaps.
+    - **"Senior IOC Triage Specialist (V2 Structured Data)"**: Initial assessment of any IOC type.
+    - **"Elite Malware Behavioral Analysis Expert (V2 Structured Data)"**: Deep behavioral analysis of file hashes.
+    - **"Master Infrastructure Hunter and Campaign Correlation Expert (V2 Structured Data)"**: Infrastructure mapping.
     
-    **Your Investigation Process**:
+    **Tool Usage Guidelines**:
+    - **Action**: You MUST use `Delegate work to coworker` or `Ask question to coworker`. Do not invent new actions.
+    - **Coworker Argument**: Must match the EXACT string roles listed above.
     
-    1. **Round 1 - Initial Assessment**:
-       - Delegate the initial IOC to the Triage Specialist
-       - Wait for their report
+    **Investigation Workflow**:
     
-    2. **Round 2 - Deep Dive (Loop)**:
-       - **CRITICAL**: Delegate to **Lead Threat Hunter** to "Check the Investigation Graph for analysis gaps".
-       - Based on the Lead Hunter's report:
-         - If unanalyzed hashes exist -> Delegate to Malware Specialist
-         - If unanalyzed IPs/domains exist -> Delegate to Infrastructure Specialist
-       - Repeat this check loop
+    1. **START - Initial Triage**:
+       - Delegate the initial IOC to the **Triage Specialist**
+       - Wait for their assessment and initial findings
     
-    3. **Round 3 - Final Pivots**:
-       - Ask Lead Threat Hunter for final graph status
-       - Delegate ONE more critical analysis
+    2. **LOOP - Deep Analysis Until Complete**:
+       - Delegate to **Lead Threat Hunter** with the request: "Check the Investigation Graph for unanalyzed nodes"
+       - Review their report and take action based on what needs analysis:
+       
+       **Decision Logic**:
+       - If BOTH unanalyzed hashes AND network IOCs exist:
+         → Prioritize HASHES first (malware analysis often reveals C2 infrastructure)
+       - If ONLY unanalyzed hashes exist:
+         → Delegate to **Malware Specialist** with specific hash(es)
+       - If ONLY unanalyzed IPs/domains exist:
+         → Delegate to **Infrastructure Specialist** with specific IOC(s)
+       - If specialist budget exhausted for a type:
+         → Note it in your investigation log and move to next available type
+       - If Lead Threat Hunter reports "No unanalyzed nodes":
+         → Proceed to SYNTHESIS phase
+       
+       **Repeat this loop** until one of these conditions is met:
+       - ✅ No gaps remain (Lead Hunter confirms graph is complete)
+       - ⚠️ All specialist budgets exhausted
+       - 🛑 10 total delegations reached (safety limit)
     
-    4. **Synthesis**:
-       - Ask Lead Threat Hunter for "Full Graph Context and Final Report"
-       - If gaps remain, explicitly state: "RECOMMEND: Continue Investigation"
-       - List unanalyzed IOCs as follow-up actions
+    3. **SYNTHESIS - Final Report**:
+       - Delegate to **Lead Threat Hunter** with request: "Generate comprehensive final intelligence report with full graph context"
+       - The Lead Hunter will synthesize all findings into the final report
+       - If analysis gaps remain due to budget limits, you MUST state:
+         * "INVESTIGATION STATUS: INCOMPLETE - Safety Limit of 10 delegations Reached"
+         * List specific unanalyzed IOCs that require follow-up
+         * Recommend priority for continued investigation
     
     **Critical Rules**:
-    - **Budget**: You have a budget of **3 calls PER SPECIALIST type**. (e.g., You can call Malware Agent 3 separate times if new hashes are found).
-    - **Graph Check**: You cannot look at the graph. Delegate "Check Graph" to the Lead Threat Hunter.
-    - **Global Limit**: Stop if you have made 10 total delegations to prevent infinite loops.
-    - **Prioritization**: Focus on high-value IOCs (hashes with malicious votes, C2 IPs) first.
-    - **Update**: Update the Investigation Graph after each specialist reports back.
+    - **DELEGATION VISIBILITY**: Always start your Thought with "I am delegating to [Coworker Name]..." so the user knows what is happening.
+    - **DELEGATION FORMAT**: The 'task' argument for delegation MUST be a simple STRING (e.g., "Analyze hash X"), NEVER a dictionary.
+    - **Budget Discipline**: You have **3 calls PER SPECIALIST type** (Triage: 3x, Malware: 3x, Infrastructure: 3x, Lead Hunter: unlimited)
+    - **Safety Limit**: Max 10 total delegations to prevent infinite loops
+    - **Graph Authority**: You cannot access the graph directly - ALWAYS delegate to Lead Threat Hunter for status checks
+    - **Prioritization**: Focus on high-value IOCs first (malicious hashes > suspicious IPs > low-confidence domains)
+    - **Evidence-Based**: Only delegate based on what Lead Hunter reports, not assumptions
+    - **Iteration Tracking**: Keep mental count of specialist calls to avoid budget violations
     
   expected_output: >
     Comprehensive investigation report with all findings, graph visualization, and actionable recommendations.
-    The report must clearly state if the investigation is COMPLETE or if specific specialist budgets were exhausted.
+    
+    The report MUST clearly state:
+    - Investigation Status: COMPLETE or INCOMPLETE
+    - Specialist budget usage (X/3 calls per type)
+    - If incomplete: List of unanalyzed IOCs requiring follow-up
+    - Key findings and threat assessment
+    - Recommended defensive actions

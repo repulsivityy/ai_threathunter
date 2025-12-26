@@ -148,6 +148,25 @@ class GTIMCPTool(BaseTool):
             verdict = gti_assessment.get("verdict", {}).get("value", "See Description")
             score = gti_assessment.get("threat_score", {}).get("value", 0)
             
+            # [MODIFIED] Build Rich Description with Critical Signals
+            gti_confidence = gti_assessment.get('contributing_factors', {}).get('gti_confidence_score', 'N/A')
+            sandbox_verdicts = attrs.get('sandbox_verdicts', {})
+            malicious_sandboxes = [name for name, v in sandbox_verdicts.items() if v.get('category') == 'malicious']
+            threat_label = attrs.get('popular_threat_classification', {}).get('suggested_threat_label', 'N/A')
+            
+            description_part = f"GTI Verdict: {verdict}\n"
+            
+            # Build description with Detection Ratio
+            rich_description = (
+                f"{description_part}\n"
+                f"--- CRITICAL SIGNALS FOR TRIAGE ---\n"
+                f"• GTI Confidence Score: {gti_confidence}/100\n"
+                f"• Detection Ratio: {malicious}/{total} (Suspicious: {stats.get('suspicious', 0)})\n"
+                f"• Malicious Sandbox Executions: {', '.join(malicious_sandboxes) if malicious_sandboxes else 'None'}\n"
+                f"• Suggested Threat Label: {threat_label}\n"
+                f"-----------------------------------"
+            )
+            
             related_iocs = []
             
             # Extract relationships (DNS for domains)
@@ -179,7 +198,7 @@ class GTIMCPTool(BaseTool):
             return IOCAnalysisResult(
                 ioc=ioc,
                 ioc_type=IOCType(ioc_type) if ioc_type in ['ip', 'domain', 'url', 'hash'] else IOCType.FILE,
-                description=text if len(text) < 5000 else text[:5000] + "...", # Truncate very long raw JSON
+                description=rich_description, # Use enriched description
                 verdict=verdict,
                 score=score,
                 malicious_votes=malicious,

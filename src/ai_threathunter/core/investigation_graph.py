@@ -7,6 +7,12 @@ class InvestigationGraph:
     def __init__(self):
         self.graph = nx.DiGraph()
         self.root_ioc = None
+    
+    def set_root_ioc(self, ioc: str):
+        """Explicitly set the root IOC for this investigation"""
+        if not self.root_ioc:
+            self.root_ioc = ioc
+            print(f"    🎯 Investigation Root Set: {self.root_ioc}")
 
     def add_behavior_summary(self, summary: BehavioralSummary):
         """
@@ -38,9 +44,8 @@ class InvestigationGraph:
             description = ioc.get('description', f"Network connection observed during behavior analysis of {summary.hash}")
             
             if target_value and target_type:
-                # Add the target node if it doesn't exist (lightweight)
-                if not self.graph.has_node(target_value):
-                    self.graph.add_node(target_value, type=target_type)
+                # NetworkX add_node is idempotent
+                self.graph.add_node(target_value, type=target_type)
                 
                 # Add edge
                 self.graph.add_edge(summary.hash, target_value, 
@@ -51,8 +56,8 @@ class InvestigationGraph:
         
         # Add edges for dropped files
         for dropped_hash in summary.files_dropped:
-             if not self.graph.has_node(dropped_hash):
-                 self.graph.add_node(dropped_hash, type=IOCType.FILE)
+             # NetworkX add_node is idempotent
+             self.graph.add_node(dropped_hash, type=IOCType.FILE)
              
              description = f"File dropped by {summary.hash} during execution"
              self.graph.add_edge(summary.hash, dropped_hash,
@@ -63,11 +68,6 @@ class InvestigationGraph:
 
     def add_node(self, node: InvestigationNode):
         """Add a node to the graph"""
-        # Set root_ioc if this is the first node
-        if self.graph.number_of_nodes() == 0 and not self.root_ioc:
-            self.root_ioc = node.id
-            print(f"    🎯 Graph Root Set: {self.root_ioc}")
-            
         self.graph.add_node(node.id, 
                            type=node.type, 
                            data=node.data, 
@@ -110,13 +110,12 @@ class InvestigationGraph:
             description = related.get('description')
             
             if target_value and target_type:
-                # Add the target node if it doesn't exist (lightweight)
-                if not self.graph.has_node(target_value):
-                    try:
-                        target_ioc_type = IOCType(target_type)
-                    except ValueError:
-                        target_ioc_type = IOCType.FILE  # fallback
-                    self.graph.add_node(target_value, type=target_ioc_type)
+                # NetworkX add_node is idempotent - no need to check has_node
+                try:
+                    target_ioc_type = IOCType(target_type)
+                except ValueError:
+                    target_ioc_type = IOCType.FILE  # fallback
+                self.graph.add_node(target_value, type=target_ioc_type)
                 
                 # Add edge with relationship type
                 try:
