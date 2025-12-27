@@ -30,7 +30,9 @@ class ThreatHuntingCrew():
         self.investigation_graph = InvestigationGraph()
         
         from .tools.gti_tool import GTITool
+        from .tools.file_tool import FileWriteTool
         self.gti_tool = GTITool(investigation_graph=self.investigation_graph)
+        self.file_write_tool = FileWriteTool()
 
         # Check if MCP mode is enabled
         use_mcp = os.getenv('USE_GTI_MCP', 'false').lower() == 'true'
@@ -63,7 +65,7 @@ class ThreatHuntingCrew():
         """Senior IOC Triage and Assessment Expert"""
         return Agent(
             config=self.agents_config['triage_specialist'],
-            tools=[self.gti_tool],
+            tools=[self.gti_tool, self.file_write_tool],
             allow_delegation=False
         )
 
@@ -72,7 +74,7 @@ class ThreatHuntingCrew():
         """Elite Malware Behavioral Analysis Expert"""
         return Agent(
             config=self.agents_config['malware_analysis_specialist'],
-            tools=[self.gti_behaviour_analysis_tool],
+            tools=[self.gti_behaviour_analysis_tool, self.file_write_tool],
             allow_delegation=False
         )
 
@@ -80,6 +82,7 @@ class ThreatHuntingCrew():
     def infrastructure_hunter(self) -> Agent:
         """Master Infrastructure Hunter and Campaign Correlation Expert"""
         tools = self.gti_infrastructure_tool if isinstance(self.gti_infrastructure_tool, list) else [self.gti_infrastructure_tool]
+        tools.append(self.file_write_tool)
         return Agent(
             config=self.agents_config['infrastructure_analysis_specialist'],
             tools=tools,
@@ -94,7 +97,8 @@ class ThreatHuntingCrew():
         all_tools = [
             GraphInspectionTool(investigation_graph=self.investigation_graph),
             self.gti_tool,
-            self.gti_behaviour_analysis_tool
+            self.gti_behaviour_analysis_tool,
+            self.file_write_tool
         ]
         
         # Flatten capability tools
@@ -123,7 +127,7 @@ class ThreatHuntingCrew():
         return Task(
             config=self.tasks_config['manager_investigation_task'],
             agent=self.orchestrator_manager(),
-            output_file='reports/final_intelligence_report.md'
+            # output_file removed to prevent truncation - Lead Hunter writes the report directly
         )
 
     @crew

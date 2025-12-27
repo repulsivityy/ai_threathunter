@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field, PrivateAttr
 import requests
 import os
 import time
+import json
+from ..core.models import IOCAnalysisResult, IOCType
 
 class GTIIpAddressToolInput(BaseModel):
     """Input schema for the GTI IP Address Tool."""
@@ -31,16 +33,35 @@ class GTIIpAddressTool(BaseTool):
         try:
             print(f"🔍 GTI IP Address Analysis: {ip_address}, Relationship: {relationship}")
             if relationship == "report":
-                result = self._get_ip_address_report(ip_address)
+                raw_json = self._get_ip_address_report(ip_address)
                 
-                # Mark IP as analyzed after report is complete
-                if self._investigation_graph and relationship == "report":
+                # Parse and add to graph
+                if self._investigation_graph:
                     try:
-                        self._investigation_graph.mark_node_analyzed(ip_address)
+                        data = json.loads(raw_json)
+                        if 'data' in data:
+                            attrs = data['data'].get('attributes', {})
+                            stats = attrs.get('last_analysis_stats', {})
+                            
+                            # Create IOCAnalysisResult
+                            result = IOCAnalysisResult(
+                                ioc=ip_address,
+                                ioc_type=IOCType.IP,
+                                verdict="MALICIOUS" if stats.get('malicious', 0) > 0 else "BENIGN",
+                                malicious_count=stats.get('malicious', 0),
+                                total_votes=sum(stats.values()) if stats else 0
+                            )
+                            
+                            # Add to graph
+                            self._investigation_graph.add_analysis_result(result)
+                            self._investigation_graph.mark_node_analyzed(ip_address)
+                    except (json.JSONDecodeError, KeyError, AttributeError, ValueError) as e:
+                        print(f"    ⚠️ Failed to parse/add IP to graph: {e}")
                     except Exception as e:
-                        print(f"    ⚠️ Failed to mark IP as analyzed: {e}")
+                        print(f"    ❌ Unexpected error adding IP to graph: {e}")
+                        raise
                 
-                return result
+                return raw_json
             else:
                 return self._get_ip_address_relationship(ip_address, relationship)
         except Exception as error:

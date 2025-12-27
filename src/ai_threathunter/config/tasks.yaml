@@ -25,7 +25,7 @@ triage_specialist_task:
 
   expected_output: >
     ### IOC Threat Assessment: [IOC Value]
-
+    
     | Metric               | Value                                         |
     | -------------------- | --------------------------------------------- |
     | IOC Type             | [file/url/domain/ip_address]                  |
@@ -40,7 +40,12 @@ triage_specialist_task:
     **Justification:** [Brief explanation based on tool findings]
     **Recommended Action:** **[Hand off to Malware Analysis / Hand off to Infrastructure Analysis / Close Alert]**
     
-  output_file: reports/triage_assessment.md
+    ---
+    
+    **CRITICAL - FILE WRITING INSTRUCTIONS:**
+    - Use the Write File Tool with file_path: `reports/triage_assessment.md`  
+    - Use this EXACT path - do NOT modify or create alternative filenames
+    - The tool will overwrite existing content, allowing updates across investigation rounds
 
 malware_analysis_specialist_task:
   description: >
@@ -71,6 +76,9 @@ malware_analysis_specialist_task:
 
   expected_output: >
     ### Deep Malware Behavioral Analysis Report
+    
+    ## Analyst Reasoning
+    [Explain your behavioral analysis process. How did you connect the dropped files? Why do you think the network indicators are C2?]
 
     **Malware Identity:**
     - **Hash:** [IOC Hash]
@@ -87,7 +95,12 @@ malware_analysis_specialist_task:
 
     **Verdict:** **[MALICIOUS - RANSOMWARE / SPYWARE / ETC]**
     
-  output_file: reports/malware_analysis.md
+    ---
+    
+    **CRITICAL - FILE WRITING INSTRUCTIONS:**
+    - Use the Write File Tool with file_path: `reports/malware_analysis.md`
+    - Use this EXACT path - do NOT modify or create alternative filenames  
+    - The tool will overwrite existing content, allowing updates across investigation rounds
 
 infrastructure_analysis_specialist_task:
   description: >
@@ -118,6 +131,9 @@ infrastructure_analysis_specialist_task:
 
   expected_output: >
     ### Infrastructure and Campaign Analysis Report
+    
+    ## Analyst Reasoning
+    [Detail your pivot process. How did you connect these nodes? Why do you suspect a coordinated campaign?]
 
     **Infrastructure Map:**
     - **Central Node:** [Initial IOC]
@@ -137,7 +153,12 @@ infrastructure_analysis_specialist_task:
     **Recommended Next Steps:**
     - **[Hand off to Strategy / Close Alert]**
     
-  output_file: reports/infrastructure_analysis.md
+    ---
+    
+    **CRITICAL - FILE WRITING INSTRUCTIONS:**
+    - Use the Write File Tool with file_path: `reports/infrastructure_analysis.md`
+    - Use this EXACT path - do NOT modify or create alternative filenames
+    - The tool will overwrite existing content, allowing updates across investigation rounds
 # 
 # strategic_campaign_intelligence_synthesis:
 #   description: >
@@ -231,6 +252,11 @@ lead_threat_hunter_task:
   description: >
     You are the Senior Case File Analyst. Your job is to execute the specific investigation phase delegated by the Manager.
     
+    **Your Primary Data Sources:**
+    1. **Investigation Graph** - Use `Investigation Graph Inspector` to access all cached analysis data
+    2. **Specialist Reports** - Read markdown files written by specialists in `reports/` directory
+    3. **API Verification (Cache-Only)** - Use GTI tools ONLY to verify discrepancies. All API calls hit cache, no real API overhead.
+    
     **Common Delegated Requests**:
     
     1.  **"Check graph for unanalyzed nodes"**
@@ -242,17 +268,33 @@ lead_threat_hunter_task:
     *   **Goal:** Confirm maliciousness with high confidence.
     *   **Action:** Review ALL cached evidence in the graph for this node.
     *   **Logic:** Cross-reference Detection Ratio, Sandbox Behavior, and Infrastructure links.
+    *   **Verification:** If something seems off, re-call the GTI tool (hits cache) to double-check.
     
     3.  **"Generate final intelligence report"**
     *   **Goal:** Synthesize the "Case File" into a narrative.
-    *   **Action:** Walk the graph to tell the story of the attack chain.
+    *   **Action:** 
+        - Read specialist reports from `reports/` directory
+        - Walk the graph to tell the story of the attack chain
+        - Use GTI tools ONLY if you need to verify a specific finding (cache-based, no API overhead)
     
   expected_output: >
     **Output tailored to the specific delegation:**
     
     *   **If Prioritizing:** A ranked list of IOCs (CRITICAL / HIGH / MEDIUM) with justification.
     *   **If Verifying:** A definitive "CONFIRMED MALICIOUS" or "FALSE POSITIVE" assessment with proof.
-    *   **If Reporting:** A complete Markdown report synthesizing all findings.
+    *   **If Reporting:** 
+          **CRITICAL - FILE WRITING INSTRUCTIONS:**
+          - Use the Write File Tool with file_path: `reports/final_intelligence_report.md`
+          - Use this EXACT path - do NOT modify or create alternative filenames
+          - Write the COMPLETE report content - do NOT truncate
+          - The tool will overwrite existing content
+          
+          The complete report MUST include:
+          - Executive Summary
+          - Full Attack Chain  
+          - Technical Findings
+          - All discovered IOCs
+          - Recommendations
 
 
 manager_investigation_task:
