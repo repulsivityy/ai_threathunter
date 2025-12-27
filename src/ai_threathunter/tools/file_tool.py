@@ -10,7 +10,10 @@ class FileWriteInput(BaseModel):
 
 class FileWriteTool(BaseTool):
     name: str = "Write File Tool"
-    description: str = "Writes text content to a specified file. Useful for saving reports."
+    description: str = (
+        "Writes text content to a specified file. CRITICAL: Use the EXACT file path provided in your task instructions. "
+        "This tool will overwrite existing files, allowing you to update reports across multiple investigation rounds."
+    )
     args_schema: Type[BaseModel] = FileWriteInput
 
     def _run(self, file_path: str, content: str) -> str:

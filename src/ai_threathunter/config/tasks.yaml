@@ -317,9 +317,10 @@ manager_investigation_task:
     
     **Investigation Workflow**:
     
-    1. **START - Initial Triage**:
-       - Delegate the initial IOC to the **Triage Specialist**
-       - Wait for their assessment and initial findings
+    1. **START - Initial Triage (MANDATORY)**:
+       - You MUST start by delegating the IOC to the **Triage Specialist**.
+       - Wait for their assessment result.
+       - DO NOT proceed to the Loop or Lead Threat Hunter until Triage is complete.
     
     2. **LOOP - Deep Analysis Until Complete**:
        - Delegate to **Lead Threat Hunter** with the request: "Check the Investigation Graph for unanalyzed nodes"
