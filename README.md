@@ -1,3 +1,5 @@
+> Learnings from this is now on Project Harimau, where we are building a graphbased investigation graph due to the limitations ofCrewAI which isn't able to handle the uniqueness of threat hunting 
+
 > disclaimer - used Gemini to create the readme
 
 # AI Threat Hunter
